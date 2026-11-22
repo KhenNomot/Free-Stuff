@@ -1,0 +1,68 @@
+# Dependencies & Package Managers
+node_modules/
+.pnpm-store/
+vendor/
+Pods/
+.gradle/
+.venv/
+env/
+__pycache__/
+
+# Build Outputs & Generated Assets
+dist/
+build/
+out/
+.next/
+.nuxt/
+target/
+bin/
+obj/
+public/
+coverage/
+.nyc_output/
+
+# Test Suites, Evals, Fixtures & Mocks
+evals/
+benchmarks/
+mocks/
+__mocks__/
+test-results/
+playwright-report/
+blob-report/
+tests/fixtures/
+fixtures/
+
+# AI, Agent Frameworks & Vendor Skill Repos
+ux-ui-agent-skills/
+.agents/
+.claude/
+.cursor/
+
+# Documentation & Storybooks
+storybook-static/
+docs/
+site/
+
+# Minified Code & Binary Bundles
+*.min.js
+*.min.css
+*.map
+*.bundle.js
+*.wasm
+
+# Lockfiles & Large Manifests
+*.lock
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# System, Logs & Graphify Cache
+.git/
+graphify-out/
+*.log
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.svg
+tmp/

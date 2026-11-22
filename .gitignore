@@ -1,0 +1,29 @@
+# Python virtual environments & bytecode
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary file conversion scratchpad
+backend/tmp/
+tmp/
+
+# Testing & Logs
+backend/tests/test_scratch/
+*.log
+graphify-out/
+**/graphify-out/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
