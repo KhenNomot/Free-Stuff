@@ -47,44 +47,130 @@ class ConversionService:
     @classmethod
     def docx_to_pdf(cls, docx_path: Path, output_path: Path) -> Path:
         """
-        Converts Word (.docx) to PDF.
-        Extracts formatted paragraphs and styles using python-docx and builds
-        a clean, portable PDF via ReportLab.
+        Converts Word (.docx) to PDF with high fidelity:
+        1. Uses native Microsoft Word COM engine via docx2pdf if available on Windows
+           (pixel-perfect layout, tables, fonts, headings, images).
+        2. Falls back to headless LibreOffice if installed.
+        3. Falls back to enhanced ReportLab with full table parsing if neither is available.
         """
-        doc = Document(str(docx_path))
+        abs_input = str(docx_path.resolve())
+        abs_output = str(output_path.resolve())
+
+        # Strategy 1: Native Word / docx2pdf (Highest fidelity on Windows)
+        try:
+            import pythoncom
+            from docx2pdf import convert
+            pythoncom.CoInitialize()
+            try:
+                convert(abs_input, abs_output)
+                if output_path.exists() and output_path.stat().st_size > 0:
+                    return output_path
+            finally:
+                pythoncom.CoUninitialize()
+        except Exception as e:
+            print(f"docx2pdf conversion notice: {e}, attempting fallback...")
+
+        # Strategy 2: Headless LibreOffice (Industry standard on Linux/Docker)
+        import subprocess, shutil
+        soffice_bin = shutil.which("soffice") or shutil.which("libreoffice")
+        if soffice_bin:
+            try:
+                subprocess.run(
+                    [soffice_bin, "--headless", "--convert-to", "pdf", "--outdir", str(output_path.parent), abs_input],
+                    capture_output=True,
+                    timeout=30
+                )
+                generated_pdf = output_path.parent / f"{docx_path.stem}.pdf"
+                if generated_pdf.exists() and generated_pdf.stat().st_size > 0:
+                    if generated_pdf != output_path:
+                        shutil.move(str(generated_pdf), str(output_path))
+                    return output_path
+            except Exception as e:
+                print(f"LibreOffice conversion notice: {e}")
+
+        # Strategy 3: Enhanced ReportLab Fallback (with table extraction)
+        from docx import Document
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+
+        doc = Document(abs_input)
         pdf_doc = SimpleDocTemplate(
-            str(output_path),
+            abs_output,
             pagesize=letter,
-            rightMargin=54,
-            leftMargin=54,
-            topMargin=54,
-            bottomMargin=54
+            rightMargin=40,
+            leftMargin=40,
+            topMargin=40,
+            bottomMargin=40
         )
 
         styles = getSampleStyleSheet()
-        normal_style = styles['Normal']
-        heading1_style = styles['Heading1']
-        heading2_style = styles['Heading2']
+        normal = styles['Normal']
+        normal.fontSize = 10
+        normal.leading = 14
+
+        title_style = ParagraphStyle(
+            'DocTitle',
+            parent=styles['Title'],
+            fontSize=20,
+            leading=26,
+            alignment=1,
+            spaceAfter=14
+        )
+
+        h1 = ParagraphStyle(
+            'DocH1',
+            parent=styles['Heading1'],
+            fontSize=14,
+            leading=18,
+            spaceBefore=12,
+            spaceAfter=6,
+            keepWithNext=True
+        )
 
         story = []
-        for paragraph in doc.paragraphs:
-            text = paragraph.text.strip()
-            if not text:
-                story.append(Spacer(1, 10))
-                continue
 
-            # Map common heading styles
-            style_name = paragraph.style.name.lower()
-            if 'heading 1' in style_name:
-                story.append(Paragraph(text, heading1_style))
-            elif 'heading 2' in style_name:
-                story.append(Paragraph(text, heading2_style))
-            else:
-                story.append(Paragraph(text, normal_style))
-            story.append(Spacer(1, 6))
+        for element in doc.element.body:
+            tag = element.tag.split('}')[-1]
+            if tag == 'p':
+                p_text = element.text or "".join(element.itertext())
+                p_text = p_text.strip()
+                if not p_text:
+                    story.append(Spacer(1, 8))
+                    continue
+                if len(story) == 0 and len(p_text) < 60:
+                    story.append(Paragraph(p_text, title_style))
+                elif len(p_text) < 50 and (p_text.isupper() or p_text.endswith(':') or not p_text.endswith('.')):
+                    story.append(Paragraph(p_text, h1))
+                else:
+                    story.append(Paragraph(p_text, normal))
+                story.append(Spacer(1, 4))
+            elif tag == 'tbl':
+                for table in doc.tables:
+                    if table._tbl == element:
+                        table_data = []
+                        for row in table.rows:
+                            row_data = [Paragraph(cell.text.strip(), normal) for cell in row.cells]
+                            table_data.append(row_data)
+                        if table_data:
+                            rl_table = Table(table_data)
+                            rl_table.setStyle(TableStyle([
+                                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f2f5')),
+                                ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+                                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                                ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cccccc')),
+                                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#888888')),
+                                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                            ]))
+                            story.append(rl_table)
+                            story.append(Spacer(1, 10))
+                        break
 
         if not story:
-            story.append(Paragraph("Empty Document", normal_style))
+            story.append(Paragraph("Empty Document", normal))
 
         pdf_doc.build(story)
         return output_path

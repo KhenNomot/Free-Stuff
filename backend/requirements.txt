@@ -8,3 +8,6 @@ pillow>=10.4.0
 reportlab>=4.2.0
 pymupdf>=1.24.0
 rembg>=2.0.87
+docx2pdf>=0.1.8
+comtypes>=1.4.0
+pywin32>=308
