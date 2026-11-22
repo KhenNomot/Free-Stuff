@@ -47,6 +47,18 @@ def test_full_conversion_pipeline():
     assert output_pdf_from_doc.exists() and output_pdf_from_doc.stat().st_size > 0
     print(f"✅ Converted DOCX back to PDF: {output_pdf_from_doc.stat().st_size} bytes")
 
+    print("\n--- 5. Testing Image Enhancer ---")
+    enhanced_img = test_dir / "enhanced.png"
+    ConversionService.enhance_image(img_path, enhanced_img)
+    assert enhanced_img.exists() and enhanced_img.stat().st_size > 0
+    print(f"✅ Enhanced Image created: {enhanced_img.stat().st_size} bytes")
+
+    print("\n--- 6. Testing Background Removal ---")
+    no_bg_img = test_dir / "no_bg.png"
+    ConversionService.remove_background(img_path, no_bg_img)
+    assert no_bg_img.exists() and no_bg_img.stat().st_size > 0
+    print(f"✅ Background Removed image created: {no_bg_img.stat().st_size} bytes")
+
     # Clean up test scratch
     for item in test_dir.glob("*"):
         if item.is_file():

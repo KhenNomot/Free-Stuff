@@ -29,7 +29,7 @@ def health_check():
 
 @app.get("/", response_class=HTMLResponse)
 def home():
-    return """<!DOCTYPE html>
+    return r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -83,7 +83,7 @@ def home():
     height: 58px;
     display: flex;
     align-items: center;
-    background: rgba(0, 0, 0, 0.88);
+    background: rgba(0, 0, 0, 0.9);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
@@ -288,7 +288,7 @@ def home():
     padding: 28px;
   }
 
-  /* ── Dropzone ── */
+  /* ── Dropzone (Bulletproof Click & Drag) ── */
   .dropzone {
     border: 1.5px dashed var(--border-2);
     border-radius: var(--radius);
@@ -301,13 +301,17 @@ def home():
     cursor: pointer;
     transition: all var(--transition);
     position: relative;
-    gap: 12px;
     background: rgba(255,255,255,0.01);
   }
 
   .dropzone:hover, .dropzone.drag-over {
-    border-color: rgba(255,255,255,0.25);
+    border-color: rgba(255,255,255,0.3);
     background: var(--accent-hover);
+  }
+
+  .dropzone.has-file {
+    border-color: rgba(34,197,94,0.4);
+    background: rgba(34,197,94,0.02);
   }
 
   .dropzone input[type="file"] {
@@ -317,23 +321,33 @@ def home():
     cursor: pointer;
     width: 100%;
     height: 100%;
+    z-index: 20;
+  }
+
+  .dropzone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;
   }
 
   .dropzone-icon {
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 1px solid var(--border-2);
-    border-radius: 10px;
+    border-radius: 11px;
     background: var(--surface-2);
     color: var(--text-muted);
-    font-size: 16px;
+    font-size: 17px;
+    transition: all var(--transition);
   }
 
   .dropzone-title {
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 500;
     color: var(--text);
   }
@@ -343,7 +357,21 @@ def home():
     color: var(--text-muted);
   }
 
-  /* ── File Preview ── */
+  .btn-browse-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 5px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* ── File Preview Row ── */
   .file-preview {
     display: none;
     align-items: center;
@@ -355,8 +383,6 @@ def home():
     border: 1px solid var(--border);
     border-radius: var(--radius);
   }
-
-  .file-preview.visible { display: flex; }
 
   .file-preview-info {
     display: flex;
@@ -373,7 +399,7 @@ def home():
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-muted);
+    color: var(--text);
     font-size: 14px;
     flex-shrink: 0;
   }
@@ -398,13 +424,13 @@ def home():
     border: none;
     color: var(--text-muted);
     cursor: pointer;
-    padding: 4px 6px;
+    padding: 6px 8px;
     border-radius: 4px;
     font-size: 13px;
     transition: all var(--transition);
   }
 
-  .btn-remove:hover { color: var(--danger); }
+  .btn-remove:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
 
   /* ── Card Footer & Actions ── */
   .card-footer {
@@ -422,8 +448,8 @@ def home():
     justify-content: center;
     gap: 8px;
     padding: 11px 20px;
-    background: var(--text);
-    color: var(--bg);
+    background: #ffffff;
+    color: #000000;
     border: none;
     border-radius: var(--radius);
     font-family: inherit;
@@ -440,6 +466,8 @@ def home():
   .btn-action:disabled {
     opacity: 0.25;
     cursor: not-allowed;
+    background: #555555;
+    color: #888888;
   }
 
   .status-bar {
@@ -555,7 +583,7 @@ def home():
     <p id="viewDesc">Convert PDF, Word documents, and images with layout preservation.</p>
   </div>
 
-  <!-- Sub-Tabs for File Conversion (Only visible under File Conversion view) -->
+  <!-- Sub-Tabs for File Conversion -->
   <div class="sub-tabs" id="conversionSubTabs">
     <button class="sub-tab-btn active" id="tab-pdf-to-docx" onclick="setConversionSubTool('pdf-to-docx')">
       <i class="fa-regular fa-file-pdf"></i>
@@ -578,15 +606,20 @@ def home():
   <!-- Processing Card -->
   <div class="tool-card">
     <div class="card-body">
-      <!-- Drag & Drop Zone -->
+      <!-- Bulletproof Dropzone with z-indexed file input -->
       <div class="dropzone" id="dropzone">
-        <input type="file" id="fileInput" onchange="handleFileSelect(event)">
-        <div class="dropzone-icon">
-          <i class="fa-solid fa-arrow-up-from-bracket" id="dropzoneIcon"></i>
-        </div>
-        <div>
-          <div class="dropzone-title" id="dropzoneTitle">Drop file here, or click to browse</div>
-          <div class="dropzone-hint" id="dropzoneHint">.pdf files only — up to 50 MB</div>
+        <input type="file" id="fileInput">
+        <div class="dropzone-content">
+          <div class="dropzone-icon" id="dropzoneIcon">
+            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+          </div>
+          <div>
+            <div class="dropzone-title" id="dropzoneTitle">Drag &amp; drop file here, or click to browse</div>
+            <div class="dropzone-hint" id="dropzoneHint">.pdf files only — up to 50 MB</div>
+          </div>
+          <div class="btn-browse-pill">
+            <i class="fa-solid fa-folder-open"></i> Choose File
+          </div>
         </div>
       </div>
 
@@ -597,8 +630,8 @@ def home():
             <i class="fa-regular fa-file" id="fileTypeIcon"></i>
           </div>
           <div>
-            <div class="file-name" id="fileName">file.pdf</div>
-            <div class="file-meta" id="fileMeta">1.2 MB</div>
+            <div class="file-name" id="fileName">document.pdf</div>
+            <div class="file-meta" id="fileMeta">0 KB</div>
           </div>
         </div>
         <button class="btn-remove" onclick="clearFile()" title="Remove file">
@@ -623,7 +656,7 @@ def home():
   <!-- Zero Retention Banner -->
   <div class="privacy-footer">
     <i class="fa-solid fa-shield-halved"></i>
-    <span>Stateless & Private: Files are processed in memory and purged immediately after download.</span>
+    <span>Stateless &amp; Private: Files are processed in memory and purged immediately after download.</span>
   </div>
 </main>
 
@@ -632,8 +665,7 @@ def home():
 </footer>
 
 <script>
-  // State Management
-  let activeMainFeature = 'conversion'; // 'conversion' | 'enhancer' | 'remover'
+  let activeMainFeature = 'conversion';
   let activeConversionTool = 'pdf-to-docx';
   let selectedFiles = [];
 
@@ -680,19 +712,19 @@ def home():
     }
   };
 
+  const fileInput = document.getElementById('fileInput');
+  const dropzone = document.getElementById('dropzone');
+
   // Switch between main navbar features
   function switchMainFeature(feature) {
     activeMainFeature = feature;
 
-    // Update active nav button
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById('nav-' + feature).classList.add('active');
 
     const subTabs = document.getElementById('conversionSubTabs');
     const viewTitle = document.getElementById('viewTitle');
     const viewDesc = document.getElementById('viewDesc');
-    const btnText = document.getElementById('btnText');
-    const fileInput = document.getElementById('fileInput');
     const dropzoneHint = document.getElementById('dropzoneHint');
 
     clearFile();
@@ -707,7 +739,7 @@ def home():
       fileInput.accept = '.png,.jpg,.jpeg,.webp';
       fileInput.multiple = false;
       dropzoneHint.textContent = '.png, .jpg, .webp up to 50 MB';
-      btnText.textContent = 'Enhance Image';
+      document.getElementById('btnText').textContent = 'Enhance Image';
     } else if (feature === 'remover') {
       subTabs.style.display = 'none';
       viewTitle.textContent = 'Background Remover';
@@ -715,7 +747,7 @@ def home():
       fileInput.accept = '.png,.jpg,.jpeg,.webp';
       fileInput.multiple = false;
       dropzoneHint.textContent = '.png, .jpg, .webp up to 50 MB';
-      btnText.textContent = 'Remove Background';
+      document.getElementById('btnText').textContent = 'Remove Background';
     }
   }
 
@@ -731,7 +763,6 @@ def home():
     document.getElementById('viewDesc').textContent = cfg.desc;
     document.getElementById('btnText').textContent = cfg.btnText;
 
-    const fileInput = document.getElementById('fileInput');
     fileInput.accept = cfg.accept;
     fileInput.multiple = cfg.multiple;
     document.getElementById('dropzoneHint').textContent = cfg.hint;
@@ -739,10 +770,14 @@ def home():
     clearFile();
   }
 
-  // Drag and Drop listeners
-  const dropzone = document.getElementById('dropzone');
-  const fileInput = document.getElementById('fileInput');
+  // Listen for file selection
+  fileInput.addEventListener('change', function(e) {
+    if (this.files && this.files.length > 0) {
+      processFiles(this.files);
+    }
+  });
 
+  // Drag and Drop listeners
   dropzone.addEventListener('dragover', e => {
     e.preventDefault();
     dropzone.classList.add('drag-over');
@@ -753,12 +788,10 @@ def home():
   dropzone.addEventListener('drop', e => {
     e.preventDefault();
     dropzone.classList.remove('drag-over');
-    if (e.dataTransfer.files.length) processFiles(e.dataTransfer.files);
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    }
   });
-
-  function handleFileSelect(e) {
-    if (e.target.files.length) processFiles(e.target.files);
-  }
 
   function processFiles(files) {
     selectedFiles = Array.from(files);
@@ -769,12 +802,13 @@ def home():
     const fmeta = document.getElementById('fileMeta');
     const ficon = document.getElementById('fileTypeIcon');
     const actionBtn = document.getElementById('actionBtn');
+    const first = selectedFiles[0];
 
     if (selectedFiles.length === 1) {
-      fname.textContent = selectedFiles[0].name;
-      fmeta.textContent = formatBytes(selectedFiles[0].size);
+      fname.textContent = first.name;
+      fmeta.textContent = formatBytes(first.size);
 
-      const ext = selectedFiles[0].name.split('.').pop().toLowerCase();
+      const ext = first.name.split('.').pop().toLowerCase();
       const iconMap = {
         pdf: 'fa-regular fa-file-pdf',
         docx: 'fa-regular fa-file-word',
@@ -786,22 +820,48 @@ def home():
       };
       ficon.className = iconMap[ext] || 'fa-regular fa-file';
     } else {
-      fname.textContent = `${selectedFiles.length} images selected`;
+      fname.textContent = `${selectedFiles.length} files selected`;
       const total = selectedFiles.reduce((s, f) => s + f.size, 0);
       fmeta.textContent = formatBytes(total) + ' total';
       ficon.className = 'fa-regular fa-images';
     }
 
-    preview.classList.add('visible');
+    // Display preview row
+    preview.style.display = 'flex';
     actionBtn.disabled = false;
+    actionBtn.removeAttribute('disabled');
+
+    // Visual dropzone feedback
+    dropzone.classList.add('has-file');
+    document.getElementById('dropzoneTitle').textContent = selectedFiles.length === 1 ? first.name : `${selectedFiles.length} files selected`;
+    document.getElementById('dropzoneHint').textContent = 'Click or drop to choose a different file';
+    document.getElementById('dropzoneIcon').innerHTML = '<i class="fa-solid fa-circle-check" style="color: #4ade80;"></i>';
+
     hideStatus();
   }
 
   function clearFile() {
     selectedFiles = [];
     fileInput.value = '';
-    document.getElementById('filePreview').classList.remove('visible');
-    document.getElementById('actionBtn').disabled = true;
+    
+    const preview = document.getElementById('filePreview');
+    preview.style.display = 'none';
+
+    const actionBtn = document.getElementById('actionBtn');
+    actionBtn.disabled = true;
+    actionBtn.setAttribute('disabled', 'true');
+
+    dropzone.classList.remove('has-file');
+    document.getElementById('dropzoneTitle').textContent = 'Drag & drop file here, or click to browse';
+    document.getElementById('dropzoneIcon').innerHTML = '<i class="fa-solid fa-arrow-up-from-bracket"></i>';
+
+    if (activeMainFeature === 'conversion') {
+      const cfg = conversionTools[activeConversionTool];
+      document.getElementById('dropzoneHint').textContent = cfg.hint;
+    } else {
+      document.getElementById('dropzoneHint').textContent = '.png, .jpg, .webp up to 50 MB';
+    }
+
     hideStatus();
   }
 
@@ -832,7 +892,7 @@ def home():
     document.getElementById('statusBar').classList.remove('visible');
   }
 
-  // Execute processing
+  // Execute processing & auto-download
   async function executeCurrentAction() {
     if (!selectedFiles.length) return;
 
@@ -844,7 +904,7 @@ def home():
     actionBtn.disabled = true;
     btnIcon.className = 'fa-solid fa-circle-notch fa-spin';
     btnText.textContent = 'Processing...';
-    showStatus('info', 'Processing file on server — downloading automatically when complete.');
+    showStatus('info', 'Processing on server — downloading automatically when ready.');
 
     let endpoint = '';
     let isMultiple = false;
@@ -874,7 +934,7 @@ def home():
       const res = await fetch(endpoint, { method: 'POST', body: form });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: 'Process failed' }));
+        const err = await res.json().catch(() => ({ detail: 'Processing error' }));
         throw new Error(err.detail || 'Failed to process file');
       }
 
@@ -906,7 +966,7 @@ def home():
     }
   }
 
-  // Initialize view
+  // Initialize
   switchMainFeature('conversion');
 </script>
 </body>
