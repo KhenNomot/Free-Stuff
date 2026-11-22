@@ -21,7 +21,7 @@ def validate_file_size(file: UploadFile):
     return size
 
 @router.post("/pdf-to-docx")
-async def convert_pdf_to_docx(
+def convert_pdf_to_docx(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...)
 ):
@@ -51,7 +51,7 @@ async def convert_pdf_to_docx(
     )
 
 @router.post("/docx-to-pdf")
-async def convert_docx_to_pdf(
+def convert_docx_to_pdf(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...)
 ):
@@ -81,7 +81,7 @@ async def convert_docx_to_pdf(
     )
 
 @router.post("/images-to-pdf")
-async def convert_images_to_pdf(
+def convert_images_to_pdf(
     background_tasks: BackgroundTasks,
     files: List[UploadFile] = File(...)
 ):
@@ -119,7 +119,7 @@ async def convert_images_to_pdf(
     )
 
 @router.post("/pdf-to-images")
-async def convert_pdf_to_images(
+def convert_pdf_to_images(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...)
 ):
@@ -149,7 +149,7 @@ async def convert_pdf_to_images(
     )
 
 @router.post("/enhance-image")
-async def enhance_image_endpoint(
+def enhance_image_endpoint(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...)
 ):
@@ -180,7 +180,7 @@ async def enhance_image_endpoint(
     )
 
 @router.post("/remove-bg")
-async def remove_bg_endpoint(
+def remove_bg_endpoint(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...)
 ):
@@ -208,4 +208,3 @@ async def remove_bg_endpoint(
         media_type="image/png",
         filename=output_png.name
     )
-

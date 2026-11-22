@@ -1,17 +1,27 @@
 import os
 import io
 import uuid
+import shutil
 import zipfile
 from pathlib import Path
 from typing import List, Optional
-from PIL import Image
-import fitz  # PyMuPDF
+from PIL import Image, ImageEnhance, ImageOps
+import pymupdf  # Modern PyMuPDF replacement for fitz
 from pdf2docx import Converter
-from docx import Document
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from app.core.config import TEMP_DIR
+
+# Global cached rembg session for instant background removals
+_rembg_session = None
+
+def get_rembg_session():
+    global _rembg_session
+    if _rembg_session is None:
+        try:
+            from rembg import new_session
+            _rembg_session = new_session("u2net")
+        except Exception as e:
+            print(f"Warning: Failed to pre-load rembg session: {e}")
+    return _rembg_session
 
 class ConversionService:
     @staticmethod
@@ -27,10 +37,7 @@ class ConversionService:
         """Immediately purges all job files to uphold zero-retention privacy."""
         try:
             if job_dir.exists():
-                for item in job_dir.glob("*"):
-                    if item.is_file():
-                        item.unlink()
-                job_dir.rmdir()
+                shutil.rmtree(str(job_dir), ignore_errors=True)
         except Exception as e:
             print(f"Warning: Failed to clean up {job_dir}: {e}")
 
@@ -47,34 +54,56 @@ class ConversionService:
     @classmethod
     def docx_to_pdf(cls, docx_path: Path, output_path: Path) -> Path:
         """
-        Converts Word (.docx) to PDF with high fidelity:
-        1. Uses native Microsoft Word COM engine via docx2pdf if available on Windows
-           (pixel-perfect layout, tables, fonts, headings, images).
-        2. Falls back to headless LibreOffice if installed.
-        3. Falls back to enhanced ReportLab with full table parsing if neither is available.
+        Converts Word (.docx / .doc) to PDF with high fidelity:
+        1. Native Microsoft Word COM Automation on Windows:
+           - Uses Word's native print-quality export engine (100% fidelity: exact fonts, tables, margins, styles)
+           - Runs in headless/invisible mode with DisplayAlerts disabled to prevent dialog freezes
+        2. Headless LibreOffice fallback (for Linux/server environments without MS Office)
+        3. Enhanced ReportLab fallback (with full table reconstruction & paragraph styling)
         """
         abs_input = str(docx_path.resolve())
         abs_output = str(output_path.resolve())
 
-        # Strategy 1: Native Word / docx2pdf (Highest fidelity on Windows)
+        # Strategy 1: Native Microsoft Word COM Automation (Highest Fidelity on Windows)
         try:
             import pythoncom
-            from docx2pdf import convert
+            import win32com.client
             pythoncom.CoInitialize()
+            word = None
+            doc = None
             try:
-                convert(abs_input, abs_output)
+                word = win32com.client.DispatchEx("Word.Application")
+                word.Visible = False
+                word.DisplayAlerts = 0  # wdAlertsNone - prevents popup dialogs from blocking
+                doc = word.Documents.Open(abs_input, ReadOnly=True, ConfirmConversions=False)
+                # 17 = wdFormatPDF
+                doc.SaveAs(abs_output, FileFormat=17)
+                doc.Close(SaveChanges=0)
+                doc = None
+                word.Quit(SaveChanges=0)
+                word = None
                 if output_path.exists() and output_path.stat().st_size > 0:
                     return output_path
             finally:
+                if doc is not None:
+                    try:
+                        doc.Close(SaveChanges=0)
+                    except Exception:
+                        pass
+                if word is not None:
+                    try:
+                        word.Quit(SaveChanges=0)
+                    except Exception:
+                        pass
                 pythoncom.CoUninitialize()
         except Exception as e:
-            print(f"docx2pdf conversion notice: {e}, attempting fallback...")
+            print(f"Native Word COM conversion notice: {e}, attempting fallback...")
 
-        # Strategy 2: Headless LibreOffice (Industry standard on Linux/Docker)
-        import subprocess, shutil
+        # Strategy 2: Headless LibreOffice
         soffice_bin = shutil.which("soffice") or shutil.which("libreoffice")
         if soffice_bin:
             try:
+                import subprocess
                 subprocess.run(
                     [soffice_bin, "--headless", "--convert-to", "pdf", "--outdir", str(output_path.parent), abs_input],
                     capture_output=True,
@@ -88,7 +117,7 @@ class ConversionService:
             except Exception as e:
                 print(f"LibreOffice conversion notice: {e}")
 
-        # Strategy 3: Enhanced ReportLab Fallback (with table extraction)
+        # Strategy 3: Enhanced ReportLab Fallback (with full table parsing & layout)
         from docx import Document
         from reportlab.lib.pagesizes import letter
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -177,11 +206,16 @@ class ConversionService:
 
     @classmethod
     def images_to_pdf(cls, image_paths: List[Path], output_path: Path) -> Path:
-        """Combines one or multiple images (PNG/JPG/WEBP) into a single PDF."""
+        """
+        Combines one or multiple images (PNG/JPG/WEBP) into a single PDF.
+        Automatically normalizes EXIF orientation and color modes.
+        """
         images = []
         for img_p in image_paths:
             img = Image.open(img_p)
-            # Convert RGBA to RGB for PDF compatibility
+            # Correct orientation from mobile phone camera metadata
+            img = ImageOps.exif_transpose(img)
+            # Convert RGBA / Palette to RGB for PDF standard compatibility
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
             images.append(img)
@@ -204,13 +238,13 @@ class ConversionService:
     @classmethod
     def pdf_to_images(cls, pdf_path: Path, output_dir: Path, dpi: int = 200) -> Path:
         """
-        Converts PDF pages to PNG images.
+        Converts PDF pages to crisp PNG images.
         If single page: returns the image path.
         If multi-page: packs pages into a zip archive and returns the zip path.
         """
-        doc = fitz.open(str(pdf_path))
+        doc = pymupdf.open(str(pdf_path))
         total_pages = len(doc)
-        
+
         if total_pages == 0:
             raise ValueError("PDF document contains no pages.")
 
@@ -235,25 +269,34 @@ class ConversionService:
         return zip_path
 
     @classmethod
-    def enhance_image(cls, image_path: Path, output_path: Path, sharpness: float = 1.4, contrast: float = 1.15, color: float = 1.1) -> Path:
+    def enhance_image(
+        cls,
+        image_path: Path,
+        output_path: Path,
+        sharpness: float = 1.35,
+        contrast: float = 1.12,
+        color: float = 1.08
+    ) -> Path:
         """
-        Enhances image quality using PIL ImageEnhance:
-        - Sharpness enhancement for crisp details
-        - Contrast adjustment for deep rich tones
-        - Subtle color saturation boost
+        Enhances image clarity and visual punch:
+        - Auto-corrects EXIF rotation
+        - Auto-contrast adjustment to remove haze
+        - Multi-pass sharpness & color vibrancy tuning
         """
-        from PIL import ImageEnhance
         img = Image.open(image_path)
+        img = ImageOps.exif_transpose(img)
         is_transparent = img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info)
 
         if not is_transparent:
             img = img.convert("RGB")
+            # Auto-contrast stretch (gentle 0.5% cutoff) for crisp dynamics
+            img = ImageOps.autocontrast(img, cutoff=0.5)
 
         # 1. Enhance Sharpness
         img = ImageEnhance.Sharpness(img).enhance(sharpness)
         # 2. Enhance Contrast
         img = ImageEnhance.Contrast(img).enhance(contrast)
-        # 3. Enhance Color
+        # 3. Enhance Color Vibrancy
         img = ImageEnhance.Color(img).enhance(color)
 
         save_format = "PNG" if is_transparent or output_path.suffix.lower() == ".png" else "JPEG"
@@ -268,13 +311,20 @@ class ConversionService:
     def remove_background(cls, image_path: Path, output_path: Path) -> Path:
         """
         Removes background from image using rembg (U2-Net / ONNX),
-        producing a transparent PNG.
+        producing a clean, transparent PNG.
+        Uses cached session for low-latency processing.
         """
         from rembg import remove
+        session = get_rembg_session()
+
         with open(image_path, "rb") as i:
             input_bytes = i.read()
-        output_bytes = remove(input_bytes)
+
+        if session is not None:
+            output_bytes = remove(input_bytes, session=session)
+        else:
+            output_bytes = remove(input_bytes)
+
         with open(output_path, "wb") as o:
             o.write(output_bytes)
         return output_path
-
