@@ -780,8 +780,11 @@ def home():
             <button type="button" class="tool-btn" id="btnToolBox" onclick="setEditorTool('box')">
               <i class="fa-regular fa-square"></i> Box Select
             </button>
+            <button type="button" class="tool-btn" id="btnToolAuto" onclick="setEditorTool('auto')">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Detect
+            </button>
             <button type="button" class="tool-btn" onclick="clearCanvasMask()">
-              <i class="fa-solid fa-rotate-left"></i> Reset Selection
+              <i class="fa-solid fa-rotate-left"></i> Reset
             </button>
           </div>
 
@@ -799,7 +802,7 @@ def home():
         </div>
 
         <div class="canvas-hint-bar">
-          <span><i class="fa-solid fa-circle-info"></i> Brush or box over the watermark to erase. Unselected areas remain 100% untouched.</span>
+          <span id="canvasHintText"><i class="fa-solid fa-circle-info"></i> Brush or box over the watermark to erase. Unselected areas remain 100% untouched.</span>
           <span id="maskPixelCount" style="color: #4ade80;">Ready</span>
         </div>
       </div>
@@ -1084,14 +1087,42 @@ def home():
   function clearCanvasMask() {
     maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
     hasUserMask = false;
-    document.getElementById('maskPixelCount').textContent = 'Ready (Brush over watermark)';
+    const pixelCount = document.getElementById('maskPixelCount');
+    if (editorTool === 'auto') {
+      if (pixelCount) pixelCount.textContent = 'Auto-Detect active';
+    } else {
+      if (pixelCount) pixelCount.textContent = 'Ready (Brush over watermark)';
+    }
     redrawMainCanvas();
   }
 
   function setEditorTool(tool) {
     editorTool = tool;
-    document.getElementById('btnToolBrush').classList.toggle('active', tool === 'brush');
-    document.getElementById('btnToolBox').classList.toggle('active', tool === 'box');
+    const btnBrush = document.getElementById('btnToolBrush');
+    const btnBox = document.getElementById('btnToolBox');
+    const btnAuto = document.getElementById('btnToolAuto');
+    const slider = document.getElementById('brushSliderGroup');
+    const hint = document.getElementById('canvasHintText');
+    const pixelCount = document.getElementById('maskPixelCount');
+
+    if (btnBrush) btnBrush.classList.toggle('active', tool === 'brush');
+    if (btnBox) btnBox.classList.toggle('active', tool === 'box');
+    if (btnAuto) btnAuto.classList.toggle('active', tool === 'auto');
+
+    if (tool === 'auto') {
+      if (slider) slider.style.display = 'none';
+      clearCanvasMask();
+      if (hint) hint.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> <strong>Smart Auto-Detect:</strong> automatically detects text & logo stamps and cleans them with zero landscape distortion.';
+      if (pixelCount) pixelCount.textContent = 'Auto-Detect active';
+    } else if (tool === 'brush') {
+      if (slider) slider.style.display = 'flex';
+      if (hint) hint.innerHTML = '<i class="fa-solid fa-paintbrush"></i> <strong>Brush:</strong> paint over watermark. Only brushed pixels are infilled; untouched areas remain 100% pixel-perfect.';
+      if (pixelCount && !hasUserMask) pixelCount.textContent = 'Ready (Brush over watermark)';
+    } else if (tool === 'box') {
+      if (slider) slider.style.display = 'none';
+      if (hint) hint.innerHTML = '<i class="fa-regular fa-square"></i> <strong>Box Select:</strong> drag a rectangle around watermark stamps to remove them cleanly.';
+      if (pixelCount && !hasUserMask) pixelCount.textContent = 'Ready (Drag rectangle)';
+    }
   }
 
   function updateBrushSize(val) {
@@ -1279,7 +1310,8 @@ def home():
         }
       } else {
         // Image watermark: check if user brushed a mask on canvas
-        if (hasUserMask) {
+        if (editorTool !== 'auto' && hasUserMask) {
+          showStatus('info', 'Erasing selected watermark with pixel-level precision...');
           // Export pure black and white mask from maskCanvas
           const exportCanvas = document.createElement('canvas');
           exportCanvas.width = maskCanvas.width;
@@ -1302,6 +1334,7 @@ def home():
           expCtx.putImageData(outImgData, 0, 0);
           form.append('mask_data', exportCanvas.toDataURL('image/png'));
         } else {
+          showStatus('info', 'Auto-detecting and removing watermark stamps...');
           form.append('preset', 'auto');
         }
       }

@@ -172,7 +172,14 @@ def enhance_image_endpoint(
 
     background_tasks.add_task(ConversionService.cleanup_job, job_dir)
 
-    media_type = "image/png" if output_img.suffix.lower() == ".png" else "image/jpeg"
+    out_ext = output_img.suffix.lower()
+    if out_ext == ".webp":
+        media_type = "image/webp"
+    elif out_ext == ".png":
+        media_type = "image/png"
+    else:
+        media_type = "image/jpeg"
+
     return FileResponse(
         path=output_img,
         media_type=media_type,
@@ -248,7 +255,13 @@ def remove_watermark_endpoint(
                 box=box,
                 mask_data=mask_data
             )
-            media_type = "image/png" if output_path.suffix.lower() == ".png" else "image/jpeg"
+            out_ext = output_path.suffix.lower()
+            if out_ext == ".webp":
+                media_type = "image/webp"
+            elif out_ext == ".png":
+                media_type = "image/png"
+            else:
+                media_type = "image/jpeg"
         else:
             output_path = job_dir / f"clean_{file.filename}"
             ConversionService.remove_pdf_watermark(input_path, output_path, custom_text=custom_text)

@@ -300,11 +300,13 @@ class ConversionService:
         # 3. Enhance Color Vibrancy
         img = ImageEnhance.Color(img).enhance(color)
 
-        save_format = "PNG" if is_transparent or output_path.suffix.lower() == ".png" else "JPEG"
-        if save_format == "JPEG":
-            img.save(str(output_path), "JPEG", quality=95, optimize=True)
-        else:
+        ext = output_path.suffix.lower()
+        if ext == ".webp":
+            img.save(str(output_path), "WEBP", quality=95)
+        elif is_transparent or ext == ".png":
             img.save(str(output_path), "PNG", optimize=True)
+        else:
+            img.save(str(output_path), "JPEG", quality=95, optimize=True)
 
         return output_path
 
@@ -400,43 +402,49 @@ class ConversionService:
             elif preset == "center":
                 cv2.rectangle(mask, (int(w * 0.18), int(h * 0.35)), (int(w * 0.82), int(h * 0.60)), 255, -1)
             else:
-                # Mode 4: Safe Smart Auto-Detect with Connected-Component text filtering
+                # Mode 4: Safe Smart Auto-Detect with Dual Text/Stamp Extraction
                 gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-                # Gradient edge magnitude
+                hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+                safe_mask = np.zeros((h, w), dtype=np.uint8)
+
+                # Sub-detector A: Colored text / stamps (e.g. orange, red, green, blue watermark text)
+                s_ch = hsv[:, :, 1]
+                sat_mask = (s_ch >= 40).astype(np.uint8)
+                num_s_labels, s_labels, s_stats, _ = cv2.connectedComponentsWithStats(sat_mask, connectivity=8)
+                for i in range(1, num_s_labels):
+                    area = s_stats[i, cv2.CC_STAT_AREA]
+                    cw = s_stats[i, cv2.CC_STAT_WIDTH]
+                    ch = s_stats[i, cv2.CC_STAT_HEIGHT]
+                    if 8 <= area <= 2500 and 5 <= ch <= 60 and 3 <= cw <= 90:
+                        aspect = cw / float(ch)
+                        if 0.1 <= aspect <= 4.5:
+                            safe_mask[s_labels == i] = 255
+
+                # Sub-detector B: High-contrast edges (white/gray/black stamps and diagonal text)
                 grad_x = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
                 grad_y = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
                 mag = cv2.magnitude(grad_x, grad_y)
                 mag_norm = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-                _, edge_thresh = cv2.threshold(mag_norm, 105, 255, cv2.THRESH_BINARY)
+                _, edge_thresh = cv2.threshold(mag_norm, 65, 255, cv2.THRESH_BINARY)
 
-                # Colored stamps (high saturation text/logos)
-                hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
-                s_ch = hsv[:, :, 1]
-                _, sat_thresh = cv2.threshold(s_ch, 70, 255, cv2.THRESH_BINARY)
-                color_stamp = cv2.bitwise_and(sat_thresh, edge_thresh)
-
-                # Filter components to ONLY match text/stamp dimensions
-                num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(edge_thresh, connectivity=8)
-                safe_mask = np.zeros((h, w), dtype=np.uint8)
-
-                for i in range(1, num_labels):
-                    area = stats[i, cv2.CC_STAT_AREA]
-                    cw = stats[i, cv2.CC_STAT_WIDTH]
-                    ch = stats[i, cv2.CC_STAT_HEIGHT]
-                    # Valid text stroke dimensions (prevents large terrain, mountains, trees from being masked)
-                    if 8 <= area <= 2000 and 4 <= ch <= 50 and cw <= 120:
+                num_e_labels, e_labels, e_stats, _ = cv2.connectedComponentsWithStats(edge_thresh, connectivity=8)
+                for i in range(1, num_e_labels):
+                    area = e_stats[i, cv2.CC_STAT_AREA]
+                    cw = e_stats[i, cv2.CC_STAT_WIDTH]
+                    ch = e_stats[i, cv2.CC_STAT_HEIGHT]
+                    # Stroke dimensions strictly matching letters to avoid natural mountain ridges
+                    if 10 <= area <= 1200 and 4 <= ch <= 45 and 3 <= cw <= 70:
                         aspect = cw / float(ch)
-                        if 0.15 <= aspect <= 5.0:
-                            safe_mask[labels == i] = 255
+                        if 0.15 <= aspect <= 3.5:
+                            safe_mask[e_labels == i] = 255
 
-                safe_mask = cv2.bitwise_or(safe_mask, color_stamp)
-                safe_mask = cv2.dilate(safe_mask, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)), iterations=1)
+                # Dilate gently by 2px (5x5 ellipse) to cover antialiased text borders
+                safe_mask = cv2.dilate(safe_mask, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)), iterations=1)
 
-                # Hard safety ceiling: if mask exceeds 6% of image, clamp to prevent image degradation
-                if np.sum(safe_mask > 0) > (total_pixels * 0.06):
+                # Strict Safety Ceiling: Watermark text should NEVER exceed 4% of image area
+                if np.sum(safe_mask > 0) > (total_pixels * 0.04):
                     clamped = np.zeros_like(safe_mask)
-                    # Protect borders and focus on watermark central/hotspot zones
-                    clamped[int(h*0.2):int(h*0.8), int(w*0.1):int(w*0.9)] = safe_mask[int(h*0.2):int(h*0.8), int(w*0.1):int(w*0.9)]
+                    clamped[int(h*0.15):int(h*0.85), int(w*0.08):int(w*0.92)] = safe_mask[int(h*0.15):int(h*0.85), int(w*0.08):int(w*0.92)]
                     safe_mask = clamped
 
                 mask = safe_mask
@@ -453,11 +461,13 @@ class ConversionService:
         if is_rgba and alpha_channel:
             out_img.putalpha(alpha_channel)
 
-        save_format = "PNG" if is_rgba or output_path.suffix.lower() == ".png" else "JPEG"
-        if save_format == "JPEG":
-            out_img.save(str(output_path), "JPEG", quality=95, optimize=True)
-        else:
+        ext = output_path.suffix.lower()
+        if ext == ".webp":
+            out_img.save(str(output_path), "WEBP", quality=95)
+        elif is_rgba or ext == ".png":
             out_img.save(str(output_path), "PNG", optimize=True)
+        else:
+            out_img.save(str(output_path), "JPEG", quality=95, optimize=True)
 
         return output_path
 
