@@ -200,7 +200,7 @@ def home():
   /* ── Main Layout ── */
   main {
     flex: 1;
-    max-width: 680px;
+    max-width: 720px;
     width: 100%;
     margin: 0 auto;
     padding: 56px 20px 80px;
@@ -226,7 +226,7 @@ def home():
   .section-header p {
     color: var(--text-muted);
     font-size: 14px;
-    max-width: 460px;
+    max-width: 480px;
     margin: 0 auto;
   }
 
@@ -285,14 +285,14 @@ def home():
   }
 
   .card-body {
-    padding: 28px;
+    padding: 24px;
   }
 
   /* ── Dropzone (Bulletproof Click & Drag) ── */
   .dropzone {
     border: 1.5px dashed var(--border-2);
     border-radius: var(--radius);
-    padding: 44px 20px;
+    padding: 40px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -371,13 +371,110 @@ def home():
     color: var(--text);
   }
 
+  /* ── Interactive Watermark Canvas Editor ── */
+  .canvas-editor-container {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .canvas-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tool-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .tool-btn:hover {
+    color: var(--text);
+    border-color: rgba(255,255,255,0.25);
+  }
+
+  .tool-btn.active {
+    background: rgba(34,197,94,0.12);
+    border-color: rgba(34,197,94,0.6);
+    color: #4ade80;
+  }
+
+  .brush-slider-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .brush-slider-group input[type="range"] {
+    accent-color: #ffffff;
+    cursor: pointer;
+    width: 80px;
+  }
+
+  .canvas-stage {
+    position: relative;
+    width: 100%;
+    max-height: 440px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #000000;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  #mainCanvas {
+    max-width: 100%;
+    max-height: 420px;
+    display: block;
+    cursor: crosshair;
+  }
+
+  .canvas-hint-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    padding-top: 4px;
+  }
+
   /* ── File Preview Row ── */
   .file-preview {
     display: none;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-top: 16px;
+    margin-top: 14px;
     padding: 12px 14px;
     background: var(--surface-2);
     border: 1px solid var(--border);
@@ -432,62 +529,19 @@ def home():
 
   .btn-remove:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
 
-  /* ── Watermark Controls ── */
-  .watermark-controls {
+  /* ── PDF Custom Text Controls ── */
+  .pdf-controls {
     display: none;
-    margin-top: 16px;
-    padding: 16px;
+    margin-top: 14px;
+    padding: 14px;
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
   }
 
-  .watermark-controls-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .preset-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 12px;
-  }
-
-  .preset-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: var(--surface);
-    border: 1px solid var(--border-2);
-    border-radius: 6px;
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition);
-  }
-
-  .preset-pill:hover {
-    color: var(--text);
-    border-color: rgba(255,255,255,0.25);
-  }
-
-  .preset-pill.active {
-    background: rgba(255,255,255,0.08);
-    border-color: var(--text);
-    color: var(--text);
-  }
-
   .custom-text-input {
     width: 100%;
-    padding: 8px 12px;
+    padding: 9px 12px;
     background: var(--surface);
     border: 1px solid var(--border-2);
     border-radius: 6px;
@@ -599,6 +653,7 @@ def home():
     .nav-btn span { font-size: 12px; }
     .card-footer { flex-direction: column; }
     .status-bar { width: 100%; }
+    .canvas-toolbar { flex-direction: column; align-items: flex-start; }
   }
 </style>
 </head>
@@ -715,32 +770,46 @@ def home():
         </button>
       </div>
 
-      <!-- Watermark Controls (Visible for Watermark Remover) -->
-      <div class="watermark-controls" id="watermarkControls">
-        <div class="watermark-controls-title">
-          <i class="fa-solid fa-sliders"></i>
-          <span id="wmControlLabel">Watermark Target &amp; Area Preset:</span>
+      <!-- Interactive Canvas Editor for Watermark Remover -->
+      <div class="canvas-editor-container" id="canvasEditor">
+        <div class="canvas-toolbar">
+          <div class="tool-btn-group">
+            <button type="button" class="tool-btn active" id="btnToolBrush" onclick="setEditorTool('brush')">
+              <i class="fa-solid fa-paintbrush"></i> Brush
+            </button>
+            <button type="button" class="tool-btn" id="btnToolBox" onclick="setEditorTool('box')">
+              <i class="fa-regular fa-square"></i> Box Select
+            </button>
+            <button type="button" class="tool-btn" onclick="clearCanvasMask()">
+              <i class="fa-solid fa-rotate-left"></i> Reset Selection
+            </button>
+          </div>
+
+          <div class="brush-slider-group" id="brushSliderGroup">
+            <span>Size:</span>
+            <input type="range" id="brushSize" min="6" max="60" value="22" oninput="updateBrushSize(this.value)">
+            <span id="brushSizeVal">22px</span>
+          </div>
         </div>
-        <div class="preset-pills" id="wmPresetPills">
-          <button type="button" class="preset-pill active" id="pill-auto" onclick="setWatermarkPreset('auto')">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Detect
-          </button>
-          <button type="button" class="preset-pill" id="pill-bottom_right" onclick="setWatermarkPreset('bottom_right')">
-            <i class="fa-solid fa-arrow-down-right"></i> Bottom-Right
-          </button>
-          <button type="button" class="preset-pill" id="pill-bottom_left" onclick="setWatermarkPreset('bottom_left')">
-            <i class="fa-solid fa-arrow-down-left"></i> Bottom-Left
-          </button>
-          <button type="button" class="preset-pill" id="pill-top_right" onclick="setWatermarkPreset('top_right')">
-            <i class="fa-solid fa-arrow-up-right"></i> Top-Right
-          </button>
-          <button type="button" class="preset-pill" id="pill-center" onclick="setWatermarkPreset('center')">
-            <i class="fa-solid fa-arrows-to-dot"></i> Center / Diagonal
-          </button>
+
+        <div class="canvas-stage">
+          <canvas id="mainCanvas"></canvas>
+          <!-- Offscreen mask canvas -->
+          <canvas id="maskCanvas" style="display: none;"></canvas>
         </div>
-        <div id="wmCustomTextGroup">
-          <input type="text" id="watermarkCustomText" placeholder="Optional text to remove (e.g. DRAFT, CONFIDENTIAL, CamScanner)..." class="custom-text-input">
+
+        <div class="canvas-hint-bar">
+          <span><i class="fa-solid fa-circle-info"></i> Brush or box over the watermark to erase. Unselected areas remain 100% untouched.</span>
+          <span id="maskPixelCount" style="color: #4ade80;">Ready</span>
         </div>
+      </div>
+
+      <!-- PDF Specific Watermark Input -->
+      <div class="pdf-controls" id="pdfWatermarkControls">
+        <div style="font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px;">
+          <i class="fa-solid fa-file-pdf"></i> Watermark Text to Purge across PDF Pages:
+        </div>
+        <input type="text" id="pdfCustomText" placeholder="e.g. CONFIDENTIAL, DRAFT, CamScanner (leave blank to purge all standard stamps)" class="custom-text-input">
       </div>
     </div>
 
@@ -771,8 +840,20 @@ def home():
 <script>
   let activeMainFeature = 'conversion';
   let activeConversionTool = 'pdf-to-docx';
-  let activeWatermarkPreset = 'auto';
   let selectedFiles = [];
+
+  // Canvas Editor State
+  let editorTool = 'brush'; // 'brush' or 'box'
+  let brushRadius = 22;
+  let isDrawing = false;
+  let boxStartX = 0, boxStartY = 0;
+  let loadedImage = null;
+  let hasUserMask = false;
+
+  const mainCanvas = document.getElementById('mainCanvas');
+  const maskCanvas = document.getElementById('maskCanvas');
+  const mainCtx = mainCanvas.getContext('2d');
+  const maskCtx = maskCanvas.getContext('2d');
 
   const conversionTools = {
     'pdf-to-docx': {
@@ -820,7 +901,6 @@ def home():
   const fileInput = document.getElementById('fileInput');
   const dropzone = document.getElementById('dropzone');
 
-  // Switch between main navbar features
   function switchMainFeature(feature) {
     activeMainFeature = feature;
 
@@ -831,17 +911,20 @@ def home():
     const viewTitle = document.getElementById('viewTitle');
     const viewDesc = document.getElementById('viewDesc');
     const dropzoneHint = document.getElementById('dropzoneHint');
-    const wmControls = document.getElementById('watermarkControls');
+    const canvasEditor = document.getElementById('canvasEditor');
+    const pdfControls = document.getElementById('pdfWatermarkControls');
 
     clearFile();
 
     if (feature === 'conversion') {
       subTabs.style.display = 'grid';
-      wmControls.style.display = 'none';
+      canvasEditor.style.display = 'none';
+      pdfControls.style.display = 'none';
       setConversionSubTool(activeConversionTool);
     } else if (feature === 'enhancer') {
       subTabs.style.display = 'none';
-      wmControls.style.display = 'none';
+      canvasEditor.style.display = 'none';
+      pdfControls.style.display = 'none';
       viewTitle.textContent = 'Image Enhancer';
       viewDesc.textContent = 'Improve clarity, sharpness, and color contrast of your photos.';
       fileInput.accept = '.png,.jpg,.jpeg,.webp';
@@ -850,7 +933,8 @@ def home():
       document.getElementById('btnText').textContent = 'Enhance Image';
     } else if (feature === 'remover') {
       subTabs.style.display = 'none';
-      wmControls.style.display = 'none';
+      canvasEditor.style.display = 'none';
+      pdfControls.style.display = 'none';
       viewTitle.textContent = 'Background Remover';
       viewDesc.textContent = 'Isolate foreground subjects and export transparent PNGs automatically.';
       fileInput.accept = '.png,.jpg,.jpeg,.webp';
@@ -859,9 +943,8 @@ def home():
       document.getElementById('btnText').textContent = 'Remove Background';
     } else if (feature === 'watermark') {
       subTabs.style.display = 'none';
-      wmControls.style.display = 'block';
       viewTitle.textContent = 'Watermark Remover';
-      viewDesc.textContent = 'Erase stamps, logos, and watermark text from photos or purge watermark layers from PDFs.';
+      viewDesc.textContent = 'Erase stamps, logos, and watermark text from photos with interactive brush, or purge watermark layers from PDFs.';
       fileInput.accept = '.png,.jpg,.jpeg,.webp,.pdf';
       fileInput.multiple = false;
       dropzoneHint.textContent = '.png, .jpg, .webp, or .pdf files — up to 50 MB';
@@ -869,7 +952,6 @@ def home():
     }
   }
 
-  // Switch between conversion sub-tabs
   function setConversionSubTool(tool) {
     activeConversionTool = tool;
     const cfg = conversionTools[tool];
@@ -888,21 +970,13 @@ def home():
     clearFile();
   }
 
-  function setWatermarkPreset(preset) {
-    activeWatermarkPreset = preset;
-    document.querySelectorAll('.preset-pill').forEach(btn => btn.classList.remove('active'));
-    const target = document.getElementById('pill-' + preset);
-    if (target) target.classList.add('active');
-  }
-
-  // Listen for file selection
+  // File selection
   fileInput.addEventListener('change', function(e) {
     if (this.files && this.files.length > 0) {
       processFiles(this.files);
     }
   });
 
-  // Drag and Drop listeners
   dropzone.addEventListener('dragover', e => {
     e.preventDefault();
     dropzone.classList.add('drag-over');
@@ -928,65 +1002,192 @@ def home():
     const ficon = document.getElementById('fileTypeIcon');
     const actionBtn = document.getElementById('actionBtn');
     const first = selectedFiles[0];
+    const ext = first.name.split('.').pop().toLowerCase();
 
-    if (selectedFiles.length === 1) {
-      fname.textContent = first.name;
-      fmeta.textContent = formatBytes(first.size);
+    fname.textContent = first.name;
+    fmeta.textContent = formatBytes(first.size);
 
-      const ext = first.name.split('.').pop().toLowerCase();
-      const iconMap = {
-        pdf: 'fa-regular fa-file-pdf',
-        docx: 'fa-regular fa-file-word',
-        doc: 'fa-regular fa-file-word',
-        png: 'fa-regular fa-file-image',
-        jpg: 'fa-regular fa-file-image',
-        jpeg: 'fa-regular fa-file-image',
-        webp: 'fa-regular fa-file-image'
-      };
-      ficon.className = iconMap[ext] || 'fa-regular fa-file';
+    const iconMap = {
+      pdf: 'fa-regular fa-file-pdf',
+      docx: 'fa-regular fa-file-word',
+      doc: 'fa-regular fa-file-word',
+      png: 'fa-regular fa-file-image',
+      jpg: 'fa-regular fa-file-image',
+      jpeg: 'fa-regular fa-file-image',
+      webp: 'fa-regular fa-file-image'
+    };
+    ficon.className = iconMap[ext] || 'fa-regular fa-file';
 
-      // Show/hide PDF specific options if in Watermark mode
-      const wmCustomGroup = document.getElementById('wmCustomTextGroup');
-      const wmPresetPills = document.getElementById('wmPresetPills');
-      const wmLabel = document.getElementById('wmControlLabel');
-      if (activeMainFeature === 'watermark') {
-        if (ext === 'pdf') {
-          wmLabel.textContent = 'PDF Watermark Purge Settings:';
-          wmPresetPills.style.display = 'none';
-          wmCustomGroup.style.display = 'block';
-        } else {
-          wmLabel.textContent = 'Image Watermark Area Preset:';
-          wmPresetPills.style.display = 'flex';
-          wmCustomGroup.style.display = 'block';
-        }
-      }
-    } else {
-      fname.textContent = `${selectedFiles.length} files selected`;
-      const total = selectedFiles.reduce((s, f) => s + f.size, 0);
-      fmeta.textContent = formatBytes(total) + ' total';
-      ficon.className = 'fa-regular fa-images';
-    }
-
-    // Display preview row
     preview.style.display = 'flex';
     actionBtn.disabled = false;
     actionBtn.removeAttribute('disabled');
 
-    // Visual dropzone feedback
     dropzone.classList.add('has-file');
-    document.getElementById('dropzoneTitle').textContent = selectedFiles.length === 1 ? first.name : `${selectedFiles.length} files selected`;
+    document.getElementById('dropzoneTitle').textContent = first.name;
     document.getElementById('dropzoneHint').textContent = 'Click or drop to choose a different file';
     document.getElementById('dropzoneIcon').innerHTML = '<i class="fa-solid fa-circle-check" style="color: #4ade80;"></i>';
 
+    const canvasEditor = document.getElementById('canvasEditor');
+    const pdfControls = document.getElementById('pdfWatermarkControls');
+
+    if (activeMainFeature === 'watermark') {
+      if (ext === 'pdf') {
+        canvasEditor.style.display = 'none';
+        pdfControls.style.display = 'block';
+      } else {
+        // Image loaded into interactive canvas
+        pdfControls.style.display = 'none';
+        setupInteractiveCanvas(first);
+      }
+    } else {
+      canvasEditor.style.display = 'none';
+      pdfControls.style.display = 'none';
+    }
+
     hideStatus();
+  }
+
+  // Setup interactive image canvas for watermark brushing
+  function setupInteractiveCanvas(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        loadedImage = img;
+        mainCanvas.width = img.width;
+        mainCanvas.height = img.height;
+        maskCanvas.width = img.width;
+        maskCanvas.height = img.height;
+
+        // Render image onto mainCanvas
+        redrawMainCanvas();
+        clearCanvasMask();
+
+        document.getElementById('canvasEditor').style.display = 'flex';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function redrawMainCanvas() {
+    if (!loadedImage) return;
+    mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    mainCtx.drawImage(loadedImage, 0, 0);
+
+    // Overlay mask with emerald green semi-transparency
+    mainCtx.save();
+    mainCtx.drawImage(maskCanvas, 0, 0);
+    mainCtx.restore();
+  }
+
+  function clearCanvasMask() {
+    maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+    hasUserMask = false;
+    document.getElementById('maskPixelCount').textContent = 'Ready (Brush over watermark)';
+    redrawMainCanvas();
+  }
+
+  function setEditorTool(tool) {
+    editorTool = tool;
+    document.getElementById('btnToolBrush').classList.toggle('active', tool === 'brush');
+    document.getElementById('btnToolBox').classList.toggle('active', tool === 'box');
+  }
+
+  function updateBrushSize(val) {
+    brushRadius = parseInt(val, 10);
+    document.getElementById('brushSizeVal').textContent = val + 'px';
+  }
+
+  // Canvas Mouse Coordinates relative to actual canvas resolution
+  function getCanvasCoords(e) {
+    const rect = mainCanvas.getBoundingClientRect();
+    const scaleX = mainCanvas.width / rect.width;
+    const scaleY = mainCanvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  }
+
+  mainCanvas.addEventListener('mousedown', e => {
+    isDrawing = true;
+    const pt = getCanvasCoords(e);
+    if (editorTool === 'brush') {
+      paintStroke(pt.x, pt.y);
+    } else {
+      boxStartX = pt.x;
+      boxStartY = pt.y;
+    }
+  });
+
+  window.addEventListener('mouseup', e => {
+    if (!isDrawing) return;
+    isDrawing = false;
+    if (editorTool === 'box') {
+      const pt = getCanvasCoords(e);
+      const bx = Math.min(boxStartX, pt.x);
+      const by = Math.min(boxStartY, pt.y);
+      const bw = Math.abs(pt.x - boxStartX);
+      const bh = Math.abs(pt.y - boxStartY);
+      if (bw > 4 && bh > 4) {
+        // Draw box on mask
+        maskCtx.fillStyle = 'rgba(34, 197, 94, 0.45)';
+        maskCtx.fillRect(bx, by, bw, bh);
+        maskCtx.strokeStyle = '#22c55e';
+        maskCtx.lineWidth = 2;
+        maskCtx.strokeRect(bx, by, bw, bh);
+        hasUserMask = true;
+        document.getElementById('maskPixelCount').textContent = 'Area selected';
+        redrawMainCanvas();
+      }
+    }
+  });
+
+  mainCanvas.addEventListener('mousemove', e => {
+    if (!isDrawing) return;
+    const pt = getCanvasCoords(e);
+    if (editorTool === 'brush') {
+      paintStroke(pt.x, pt.y);
+    } else {
+      // Live box preview
+      redrawMainCanvas();
+      mainCtx.save();
+      mainCtx.fillStyle = 'rgba(34, 197, 94, 0.3)';
+      mainCtx.strokeStyle = '#22c55e';
+      mainCtx.lineWidth = 2;
+      const bx = Math.min(boxStartX, pt.x);
+      const by = Math.min(boxStartY, pt.y);
+      const bw = Math.abs(pt.x - boxStartX);
+      const bh = Math.abs(pt.y - boxStartY);
+      mainCtx.fillRect(bx, by, bw, bh);
+      mainCtx.strokeRect(bx, by, bw, bh);
+      mainCtx.restore();
+    }
+  });
+
+  function paintStroke(x, y) {
+    maskCtx.save();
+    maskCtx.fillStyle = 'rgba(34, 197, 94, 0.45)';
+    maskCtx.beginPath();
+    maskCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
+    maskCtx.fill();
+    maskCtx.restore();
+
+    hasUserMask = true;
+    document.getElementById('maskPixelCount').textContent = 'Watermark brushed';
+    redrawMainCanvas();
   }
 
   function clearFile() {
     selectedFiles = [];
     fileInput.value = '';
+    loadedImage = null;
+    hasUserMask = false;
     
-    const preview = document.getElementById('filePreview');
-    preview.style.display = 'none';
+    document.getElementById('filePreview').style.display = 'none';
+    document.getElementById('canvasEditor').style.display = 'none';
+    document.getElementById('pdfWatermarkControls').style.display = 'none';
 
     const actionBtn = document.getElementById('actionBtn');
     actionBtn.disabled = true;
@@ -1069,10 +1270,40 @@ def home():
     } else if (activeMainFeature === 'watermark') {
       endpoint = '/api/convert/remove-watermark';
       fallbackOutName = 'clean_' + selectedFiles[0].name;
-      form.append('preset', activeWatermarkPreset);
-      const customTxt = document.getElementById('watermarkCustomText').value;
-      if (customTxt && customTxt.trim()) {
-        form.append('custom_text', customTxt.trim());
+
+      const ext = selectedFiles[0].name.split('.').pop().toLowerCase();
+      if (ext === 'pdf') {
+        const customTxt = document.getElementById('pdfCustomText').value;
+        if (customTxt && customTxt.trim()) {
+          form.append('custom_text', customTxt.trim());
+        }
+      } else {
+        // Image watermark: check if user brushed a mask on canvas
+        if (hasUserMask) {
+          // Export pure black and white mask from maskCanvas
+          const exportCanvas = document.createElement('canvas');
+          exportCanvas.width = maskCanvas.width;
+          exportCanvas.height = maskCanvas.height;
+          const expCtx = exportCanvas.getContext('2d');
+          expCtx.fillStyle = '#000000';
+          expCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+          // Get image data from maskCanvas: any non-transparent pixel becomes pure white (#ffffff)
+          const maskImgData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+          const outImgData = expCtx.getImageData(0, 0, exportCanvas.width, exportCanvas.height);
+          for (let i = 0; i < maskImgData.data.length; i += 4) {
+            if (maskImgData.data[i + 3] > 10) { // Has opacity
+              outImgData.data[i] = 255;
+              outImgData.data[i + 1] = 255;
+              outImgData.data[i + 2] = 255;
+              outImgData.data[i + 3] = 255;
+            }
+          }
+          expCtx.putImageData(outImgData, 0, 0);
+          form.append('mask_data', exportCanvas.toDataURL('image/png'));
+        } else {
+          form.append('preset', 'auto');
+        }
       }
     }
 

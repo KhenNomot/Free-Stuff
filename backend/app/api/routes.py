@@ -215,6 +215,7 @@ def remove_watermark_endpoint(
     file: UploadFile = File(...),
     preset: Optional[str] = Form("auto"),
     custom_text: Optional[str] = Form(None),
+    mask_data: Optional[str] = Form(None),
     box_x: Optional[float] = Form(None),
     box_y: Optional[float] = Form(None),
     box_w: Optional[float] = Form(None),
@@ -240,7 +241,13 @@ def remove_watermark_endpoint(
             box = None
             if None not in (box_x, box_y, box_w, box_h):
                 box = {"x": box_x, "y": box_y, "w": box_w, "h": box_h}
-            ConversionService.remove_image_watermark(input_path, output_path, preset=preset or "auto", box=box)
+            ConversionService.remove_image_watermark(
+                input_path,
+                output_path,
+                preset=preset or "auto",
+                box=box,
+                mask_data=mask_data
+            )
             media_type = "image/png" if output_path.suffix.lower() == ".png" else "image/jpeg"
         else:
             output_path = job_dir / f"clean_{file.filename}"
