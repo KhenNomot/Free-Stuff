@@ -328,3 +328,103 @@ class ConversionService:
         with open(output_path, "wb") as o:
             o.write(output_bytes)
         return output_path
+
+    @classmethod
+    def remove_image_watermark(
+        cls,
+        image_path: Path,
+        output_path: Path,
+        preset: str = "auto",
+        box: Optional[dict] = None
+    ) -> Path:
+        """
+        Removes watermarks, stamps, and logos from photos using OpenCV Telea inpainting.
+        Supports Auto-detection or targeted region presets (bottom_right, bottom_left, top_right, center, or custom bounding box).
+        """
+        import cv2
+        import numpy as np
+
+        img = Image.open(image_path)
+        img = ImageOps.exif_transpose(img)
+        is_rgba = img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info)
+        alpha_channel = img.convert("RGBA").split()[-1] if is_rgba else None
+
+        rgb_np = np.array(img.convert("RGB"))
+        bgr = cv2.cvtColor(rgb_np, cv2.COLOR_RGB2BGR)
+        h, w = bgr.shape[:2]
+        mask = np.zeros((h, w), dtype=np.uint8)
+
+        if box and all(k in box for k in ('x', 'y', 'w', 'h')):
+            # Bounding box in percentage or pixel values
+            bx = int(box['x'] * w / 100) if box['x'] <= 100 else int(box['x'])
+            by = int(box['y'] * h / 100) if box['y'] <= 100 else int(box['y'])
+            bw = int(box['w'] * w / 100) if box['w'] <= 100 else int(box['w'])
+            bh = int(box['h'] * h / 100) if box['h'] <= 100 else int(box['h'])
+            cv2.rectangle(mask, (max(0, bx), max(0, by)), (min(w, bx + bw), min(h, by + bh)), 255, -1)
+        elif preset == "bottom_right":
+            cv2.rectangle(mask, (int(w * 0.65), int(h * 0.80)), (w, h), 255, -1)
+        elif preset == "bottom_left":
+            cv2.rectangle(mask, (0, int(h * 0.80)), (int(w * 0.35), h), 255, -1)
+        elif preset == "top_right":
+            cv2.rectangle(mask, (int(w * 0.65), 0), (w, int(h * 0.20)), 255, -1)
+        elif preset == "center":
+            cv2.rectangle(mask, (int(w * 0.15), int(h * 0.25)), (int(w * 0.85), int(h * 0.75)), 255, -1)
+        else: # auto detection via morphological edge gradient
+            gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+            k_size = max(5, int(min(h, w) * 0.02) | 1)
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_size, k_size))
+            blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
+            tophat = cv2.morphologyEx(gray, cv2.MORPH_TOPHAT, kernel)
+            hat = cv2.add(blackhat, tophat)
+            _, thresh = cv2.threshold(hat, 20, 255, cv2.THRESH_BINARY)
+            d_k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            mask = cv2.dilate(thresh, d_k, iterations=2)
+
+        # Inpaint mask region seamlessly with Telea algorithm
+        inpainted = cv2.inpaint(bgr, mask, 3, cv2.INPAINT_TELEA)
+        out_rgb = cv2.cvtColor(inpainted, cv2.COLOR_BGR2RGB)
+        out_img = Image.fromarray(out_rgb)
+
+        if is_rgba and alpha_channel:
+            out_img.putalpha(alpha_channel)
+
+        save_format = "PNG" if is_rgba or output_path.suffix.lower() == ".png" else "JPEG"
+        if save_format == "JPEG":
+            out_img.save(str(output_path), "JPEG", quality=95, optimize=True)
+        else:
+            out_img.save(str(output_path), "PNG", optimize=True)
+
+        return output_path
+
+    @classmethod
+    def remove_pdf_watermark(cls, pdf_path: Path, output_path: Path, custom_text: Optional[str] = None) -> Path:
+        """
+        Purges watermark annotations and text stamps from PDF documents across all pages.
+        """
+        doc = pymupdf.open(str(pdf_path))
+        common_watermarks = [
+            "confidential", "draft", "sample", "evaluation",
+            "watermark", "copy", "do not copy", "camscanner",
+            "scanned by", "preview", "internal use only"
+        ]
+        if custom_text and custom_text.strip():
+            common_watermarks.append(custom_text.strip().lower())
+
+        for page in doc:
+            # Delete watermark and stamp annotations
+            annots = list(page.annots() or [])
+            for annot in annots:
+                if annot.type and len(annot.type) > 1:
+                    if annot.type[1].lower() in ("watermark", "stamp", "freetext", "highlight"):
+                        page.delete_annot(annot)
+
+            # Search and redact watermark text instances
+            for kw in common_watermarks:
+                rects = page.search_for(kw)
+                for r in rects:
+                    page.add_redact_annot(r)
+            page.apply_redactions()
+
+        doc.save(str(output_path), garbage=4, deflate=True)
+        doc.close()
+        return output_path

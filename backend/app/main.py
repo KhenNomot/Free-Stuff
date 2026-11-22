@@ -226,7 +226,7 @@ def home():
   .section-header p {
     color: var(--text-muted);
     font-size: 14px;
-    max-width: 440px;
+    max-width: 460px;
     margin: 0 auto;
   }
 
@@ -432,6 +432,76 @@ def home():
 
   .btn-remove:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
 
+  /* ── Watermark Controls ── */
+  .watermark-controls {
+    display: none;
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .watermark-controls-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .preset-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .preset-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .preset-pill:hover {
+    color: var(--text);
+    border-color: rgba(255,255,255,0.25);
+  }
+
+  .preset-pill.active {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--text);
+    color: var(--text);
+  }
+
+  .custom-text-input {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12.5px;
+    outline: none;
+    transition: border var(--transition);
+  }
+
+  .custom-text-input:focus {
+    border-color: rgba(255,255,255,0.4);
+  }
+
   /* ── Card Footer & Actions ── */
   .card-footer {
     padding: 16px 28px;
@@ -564,6 +634,12 @@ def home():
           <span>Background Remover</span>
         </button>
       </li>
+      <li>
+        <button class="nav-btn" id="nav-watermark" onclick="switchMainFeature('watermark')">
+          <i class="fa-solid fa-eraser"></i>
+          <span>Watermark Remover</span>
+        </button>
+      </li>
     </ul>
 
     <div class="nav-right">
@@ -638,6 +714,34 @@ def home():
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
+
+      <!-- Watermark Controls (Visible for Watermark Remover) -->
+      <div class="watermark-controls" id="watermarkControls">
+        <div class="watermark-controls-title">
+          <i class="fa-solid fa-sliders"></i>
+          <span id="wmControlLabel">Watermark Target &amp; Area Preset:</span>
+        </div>
+        <div class="preset-pills" id="wmPresetPills">
+          <button type="button" class="preset-pill active" id="pill-auto" onclick="setWatermarkPreset('auto')">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Detect
+          </button>
+          <button type="button" class="preset-pill" id="pill-bottom_right" onclick="setWatermarkPreset('bottom_right')">
+            <i class="fa-solid fa-arrow-down-right"></i> Bottom-Right
+          </button>
+          <button type="button" class="preset-pill" id="pill-bottom_left" onclick="setWatermarkPreset('bottom_left')">
+            <i class="fa-solid fa-arrow-down-left"></i> Bottom-Left
+          </button>
+          <button type="button" class="preset-pill" id="pill-top_right" onclick="setWatermarkPreset('top_right')">
+            <i class="fa-solid fa-arrow-up-right"></i> Top-Right
+          </button>
+          <button type="button" class="preset-pill" id="pill-center" onclick="setWatermarkPreset('center')">
+            <i class="fa-solid fa-arrows-to-dot"></i> Center / Diagonal
+          </button>
+        </div>
+        <div id="wmCustomTextGroup">
+          <input type="text" id="watermarkCustomText" placeholder="Optional text to remove (e.g. DRAFT, CONFIDENTIAL, CamScanner)..." class="custom-text-input">
+        </div>
+      </div>
     </div>
 
     <!-- Action & Status Footer -->
@@ -667,6 +771,7 @@ def home():
 <script>
   let activeMainFeature = 'conversion';
   let activeConversionTool = 'pdf-to-docx';
+  let activeWatermarkPreset = 'auto';
   let selectedFiles = [];
 
   const conversionTools = {
@@ -685,7 +790,7 @@ def home():
       accept: '.docx,.doc',
       multiple: false,
       title: 'Word to PDF',
-      desc: 'Convert Word (.docx, .doc) files into clean, readable PDF documents.',
+      desc: 'Convert Word (.docx, .doc) files into clean, readable PDF documents with 100% table & style fidelity.',
       hint: '.docx, .doc files — up to 50 MB',
       btnText: 'Convert to PDF',
       outName: n => n.replace(/\.[^/.]+$/, '') + '.pdf'
@@ -695,7 +800,7 @@ def home():
       accept: '.png,.jpg,.jpeg,.webp',
       multiple: true,
       title: 'Images to PDF',
-      desc: 'Merge multiple image files into a single standardized PDF.',
+      desc: 'Merge multiple image files into a single standardized PDF with auto-orientation.',
       hint: '.png, .jpg, .webp — select single or multiple images',
       btnText: 'Merge into PDF',
       outName: () => 'converted_images.pdf'
@@ -705,7 +810,7 @@ def home():
       accept: '.pdf',
       multiple: false,
       title: 'PDF to Images',
-      desc: 'Extract every page of a PDF document as high-resolution PNG images.',
+      desc: 'Extract every page of a PDF document as high-resolution 200 DPI PNG images.',
       hint: '.pdf files — bundled into a ZIP archive if multi-page',
       btnText: 'Extract Images',
       outName: n => n.replace(/\.[^/.]+$/, '') + '_pages.zip'
@@ -719,21 +824,24 @@ def home():
   function switchMainFeature(feature) {
     activeMainFeature = feature;
 
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.nav-menu .nav-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById('nav-' + feature).classList.add('active');
 
     const subTabs = document.getElementById('conversionSubTabs');
     const viewTitle = document.getElementById('viewTitle');
     const viewDesc = document.getElementById('viewDesc');
     const dropzoneHint = document.getElementById('dropzoneHint');
+    const wmControls = document.getElementById('watermarkControls');
 
     clearFile();
 
     if (feature === 'conversion') {
       subTabs.style.display = 'grid';
+      wmControls.style.display = 'none';
       setConversionSubTool(activeConversionTool);
     } else if (feature === 'enhancer') {
       subTabs.style.display = 'none';
+      wmControls.style.display = 'none';
       viewTitle.textContent = 'Image Enhancer';
       viewDesc.textContent = 'Improve clarity, sharpness, and color contrast of your photos.';
       fileInput.accept = '.png,.jpg,.jpeg,.webp';
@@ -742,12 +850,22 @@ def home():
       document.getElementById('btnText').textContent = 'Enhance Image';
     } else if (feature === 'remover') {
       subTabs.style.display = 'none';
+      wmControls.style.display = 'none';
       viewTitle.textContent = 'Background Remover';
       viewDesc.textContent = 'Isolate foreground subjects and export transparent PNGs automatically.';
       fileInput.accept = '.png,.jpg,.jpeg,.webp';
       fileInput.multiple = false;
       dropzoneHint.textContent = '.png, .jpg, .webp up to 50 MB';
       document.getElementById('btnText').textContent = 'Remove Background';
+    } else if (feature === 'watermark') {
+      subTabs.style.display = 'none';
+      wmControls.style.display = 'block';
+      viewTitle.textContent = 'Watermark Remover';
+      viewDesc.textContent = 'Erase stamps, logos, and watermark text from photos or purge watermark layers from PDFs.';
+      fileInput.accept = '.png,.jpg,.jpeg,.webp,.pdf';
+      fileInput.multiple = false;
+      dropzoneHint.textContent = '.png, .jpg, .webp, or .pdf files — up to 50 MB';
+      document.getElementById('btnText').textContent = 'Remove Watermark';
     }
   }
 
@@ -768,6 +886,13 @@ def home():
     document.getElementById('dropzoneHint').textContent = cfg.hint;
 
     clearFile();
+  }
+
+  function setWatermarkPreset(preset) {
+    activeWatermarkPreset = preset;
+    document.querySelectorAll('.preset-pill').forEach(btn => btn.classList.remove('active'));
+    const target = document.getElementById('pill-' + preset);
+    if (target) target.classList.add('active');
   }
 
   // Listen for file selection
@@ -819,6 +944,22 @@ def home():
         webp: 'fa-regular fa-file-image'
       };
       ficon.className = iconMap[ext] || 'fa-regular fa-file';
+
+      // Show/hide PDF specific options if in Watermark mode
+      const wmCustomGroup = document.getElementById('wmCustomTextGroup');
+      const wmPresetPills = document.getElementById('wmPresetPills');
+      const wmLabel = document.getElementById('wmControlLabel');
+      if (activeMainFeature === 'watermark') {
+        if (ext === 'pdf') {
+          wmLabel.textContent = 'PDF Watermark Purge Settings:';
+          wmPresetPills.style.display = 'none';
+          wmCustomGroup.style.display = 'block';
+        } else {
+          wmLabel.textContent = 'Image Watermark Area Preset:';
+          wmPresetPills.style.display = 'flex';
+          wmCustomGroup.style.display = 'block';
+        }
+      }
     } else {
       fname.textContent = `${selectedFiles.length} files selected`;
       const total = selectedFiles.reduce((s, f) => s + f.size, 0);
@@ -858,6 +999,8 @@ def home():
     if (activeMainFeature === 'conversion') {
       const cfg = conversionTools[activeConversionTool];
       document.getElementById('dropzoneHint').textContent = cfg.hint;
+    } else if (activeMainFeature === 'watermark') {
+      document.getElementById('dropzoneHint').textContent = '.png, .jpg, .webp, or .pdf files — up to 50 MB';
     } else {
       document.getElementById('dropzoneHint').textContent = '.png, .jpg, .webp up to 50 MB';
     }
@@ -910,6 +1053,8 @@ def home():
     let isMultiple = false;
     let fallbackOutName = 'processed_file';
 
+    const form = new FormData();
+
     if (activeMainFeature === 'conversion') {
       const cfg = conversionTools[activeConversionTool];
       endpoint = cfg.endpoint;
@@ -921,9 +1066,16 @@ def home():
     } else if (activeMainFeature === 'remover') {
       endpoint = '/api/convert/remove-bg';
       fallbackOutName = selectedFiles[0].name.replace(/\.[^/.]+$/, '') + '_no_bg.png';
+    } else if (activeMainFeature === 'watermark') {
+      endpoint = '/api/convert/remove-watermark';
+      fallbackOutName = 'clean_' + selectedFiles[0].name;
+      form.append('preset', activeWatermarkPreset);
+      const customTxt = document.getElementById('watermarkCustomText').value;
+      if (customTxt && customTxt.trim()) {
+        form.append('custom_text', customTxt.trim());
+      }
     }
 
-    const form = new FormData();
     if (isMultiple) {
       selectedFiles.forEach(f => form.append('files', f));
     } else {

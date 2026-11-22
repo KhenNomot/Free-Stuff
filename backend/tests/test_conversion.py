@@ -4,6 +4,9 @@ from pathlib import Path
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import cv2
+import numpy as np
+import pymupdf
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from PIL import Image
@@ -59,12 +62,45 @@ def test_full_conversion_pipeline():
     assert no_bg_img.exists() and no_bg_img.stat().st_size > 0
     print(f"✅ Background Removed image created: {no_bg_img.stat().st_size} bytes")
 
+    print("\n--- 7. Testing Image Watermark Removal ---")
+    wm_img_path = test_dir / "watermarked.png"
+    # Create image with watermark text in bottom right
+    base_img = np.zeros((300, 450, 3), dtype=np.uint8)
+    base_img[:] = [150, 190, 230]
+    cv2.putText(base_img, "STOCK WATERMARK", (250, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    Image.fromarray(cv2.cvtColor(base_img, cv2.COLOR_BGR2RGB)).save(wm_img_path)
+
+    clean_img_path = test_dir / "cleaned_image.png"
+    ConversionService.remove_image_watermark(wm_img_path, clean_img_path, preset="bottom_right")
+    assert clean_img_path.exists() and clean_img_path.stat().st_size > 0
+    print(f"✅ Watermark removed from image: {clean_img_path.stat().st_size} bytes")
+
+    print("\n--- 8. Testing PDF Watermark Removal ---")
+    wm_pdf_path = test_dir / "watermarked.pdf"
+    doc_wm = pymupdf.open()
+    p = doc_wm.new_page()
+    p.insert_text((50, 100), "Important Clean Financial Report", fontsize=16)
+    p.insert_text((150, 300), "CONFIDENTIAL DRAFT", fontsize=28, color=(0.8, 0.8, 0.8))
+    doc_wm.save(str(wm_pdf_path))
+    doc_wm.close()
+
+    clean_pdf_path = test_dir / "cleaned_doc.pdf"
+    ConversionService.remove_pdf_watermark(wm_pdf_path, clean_pdf_path, custom_text="confidential")
+    assert clean_pdf_path.exists() and clean_pdf_path.stat().st_size > 0
+
+    doc_ver = pymupdf.open(str(clean_pdf_path))
+    remaining_text = doc_ver[0].get_text()
+    doc_ver.close()
+    assert "CONFIDENTIAL" not in remaining_text
+    assert "Financial Report" in remaining_text
+    print(f"✅ Watermark removed from PDF: {clean_pdf_path.stat().st_size} bytes (CONFIDENTIAL purged)")
+
     # Clean up test scratch
     for item in test_dir.glob("*"):
         if item.is_file():
             item.unlink()
     test_dir.rmdir()
-    print("\n🎉 ALL CONVERSION PIPELINE TESTS PASSED!")
+    print("\n🎉 ALL 8 CONVERSION & UTILITY PIPELINE TESTS PASSED!")
 
 if __name__ == "__main__":
     test_full_conversion_pipeline()

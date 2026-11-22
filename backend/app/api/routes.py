@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
-from typing import List
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, status
+from typing import List, Optional
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, status
 from fastapi.responses import FileResponse
 from app.core.config import MAX_FILE_SIZE_BYTES
 from app.services.conversion_service import ConversionService
@@ -207,4 +207,53 @@ def remove_bg_endpoint(
         path=output_png,
         media_type="image/png",
         filename=output_png.name
+    )
+
+@router.post("/remove-watermark")
+def remove_watermark_endpoint(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    preset: Optional[str] = Form("auto"),
+    custom_text: Optional[str] = Form(None),
+    box_x: Optional[float] = Form(None),
+    box_y: Optional[float] = Form(None),
+    box_w: Optional[float] = Form(None),
+    box_h: Optional[float] = Form(None),
+):
+    ext = Path(file.filename).suffix.lower()
+    is_image = ext in (".png", ".jpg", ".jpeg", ".webp")
+    is_pdf = ext == ".pdf"
+
+    if not is_image and not is_pdf:
+        raise HTTPException(status_code=400, detail="Only image files (.png, .jpg, .webp) and PDF documents are supported.")
+
+    validate_file_size(file)
+    job_dir = ConversionService.get_job_dir()
+    input_path = job_dir / file.filename
+
+    with open(input_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    try:
+        if is_image:
+            output_path = job_dir / f"clean_{file.filename}"
+            box = None
+            if None not in (box_x, box_y, box_w, box_h):
+                box = {"x": box_x, "y": box_y, "w": box_w, "h": box_h}
+            ConversionService.remove_image_watermark(input_path, output_path, preset=preset or "auto", box=box)
+            media_type = "image/png" if output_path.suffix.lower() == ".png" else "image/jpeg"
+        else:
+            output_path = job_dir / f"clean_{file.filename}"
+            ConversionService.remove_pdf_watermark(input_path, output_path, custom_text=custom_text)
+            media_type = "application/pdf"
+    except Exception as e:
+        ConversionService.cleanup_job(job_dir)
+        raise HTTPException(status_code=500, detail=f"Watermark removal error: {str(e)}")
+
+    background_tasks.add_task(ConversionService.cleanup_job, job_dir)
+
+    return FileResponse(
+        path=output_path,
+        media_type=media_type,
+        filename=output_path.name
     )
