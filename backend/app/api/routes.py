@@ -147,3 +147,65 @@ async def convert_pdf_to_images(
         media_type=media_type,
         filename=result_path.name
     )
+
+@router.post("/enhance-image")
+async def enhance_image_endpoint(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
+    if not file.filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+        raise HTTPException(status_code=400, detail="Only image files (.png, .jpg, .webp) are supported.")
+
+    validate_file_size(file)
+    job_dir = ConversionService.get_job_dir()
+    input_img = job_dir / file.filename
+    output_img = job_dir / f"enhanced_{file.filename}"
+
+    with open(input_img, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    try:
+        ConversionService.enhance_image(input_img, output_img)
+    except Exception as e:
+        ConversionService.cleanup_job(job_dir)
+        raise HTTPException(status_code=500, detail=f"Image enhancement error: {str(e)}")
+
+    background_tasks.add_task(ConversionService.cleanup_job, job_dir)
+
+    media_type = "image/png" if output_img.suffix.lower() == ".png" else "image/jpeg"
+    return FileResponse(
+        path=output_img,
+        media_type=media_type,
+        filename=output_img.name
+    )
+
+@router.post("/remove-bg")
+async def remove_bg_endpoint(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
+    if not file.filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+        raise HTTPException(status_code=400, detail="Only image files (.png, .jpg, .webp) are supported.")
+
+    validate_file_size(file)
+    job_dir = ConversionService.get_job_dir()
+    input_img = job_dir / file.filename
+    output_png = job_dir / f"{Path(file.filename).stem}_no_bg.png"
+
+    with open(input_img, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    try:
+        ConversionService.remove_background(input_img, output_png)
+    except Exception as e:
+        ConversionService.cleanup_job(job_dir)
+        raise HTTPException(status_code=500, detail=f"Background removal error: {str(e)}")
+
+    background_tasks.add_task(ConversionService.cleanup_job, job_dir)
+
+    return FileResponse(
+        path=output_png,
+        media_type="image/png",
+        filename=output_png.name
+    )
+

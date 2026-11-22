@@ -147,3 +147,48 @@ class ConversionService:
                 zip_f.write(img, arcname=img.name)
 
         return zip_path
+
+    @classmethod
+    def enhance_image(cls, image_path: Path, output_path: Path, sharpness: float = 1.4, contrast: float = 1.15, color: float = 1.1) -> Path:
+        """
+        Enhances image quality using PIL ImageEnhance:
+        - Sharpness enhancement for crisp details
+        - Contrast adjustment for deep rich tones
+        - Subtle color saturation boost
+        """
+        from PIL import ImageEnhance
+        img = Image.open(image_path)
+        is_transparent = img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info)
+
+        if not is_transparent:
+            img = img.convert("RGB")
+
+        # 1. Enhance Sharpness
+        img = ImageEnhance.Sharpness(img).enhance(sharpness)
+        # 2. Enhance Contrast
+        img = ImageEnhance.Contrast(img).enhance(contrast)
+        # 3. Enhance Color
+        img = ImageEnhance.Color(img).enhance(color)
+
+        save_format = "PNG" if is_transparent or output_path.suffix.lower() == ".png" else "JPEG"
+        if save_format == "JPEG":
+            img.save(str(output_path), "JPEG", quality=95, optimize=True)
+        else:
+            img.save(str(output_path), "PNG", optimize=True)
+
+        return output_path
+
+    @classmethod
+    def remove_background(cls, image_path: Path, output_path: Path) -> Path:
+        """
+        Removes background from image using rembg (U2-Net / ONNX),
+        producing a transparent PNG.
+        """
+        from rembg import remove
+        with open(image_path, "rb") as i:
+            input_bytes = i.read()
+        output_bytes = remove(input_bytes)
+        with open(output_path, "wb") as o:
+            o.write(output_bytes)
+        return output_path
+
