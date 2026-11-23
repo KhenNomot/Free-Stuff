@@ -349,103 +349,6 @@ def home():
     color: var(--text);
   }
 
-  /* ── Interactive Watermark Canvas Editor ── */
-  .canvas-editor-container {
-    display: none;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 16px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-  }
-
-  .canvas-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .tool-btn-group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .tool-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: var(--surface);
-    border: 1px solid var(--border-2);
-    border-radius: 6px;
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition);
-  }
-
-  .tool-btn:hover {
-    color: var(--text);
-    border-color: rgba(255,255,255,0.25);
-  }
-
-  .tool-btn.active {
-    background: rgba(34,197,94,0.12);
-    border-color: rgba(34,197,94,0.6);
-    color: #4ade80;
-  }
-
-  .brush-slider-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  .brush-slider-group input[type="range"] {
-    accent-color: #ffffff;
-    cursor: pointer;
-    width: 80px;
-  }
-
-  .canvas-stage {
-    position: relative;
-    width: 100%;
-    max-height: 440px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background: #000000;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-  }
-
-  #mainCanvas {
-    max-width: 100%;
-    max-height: 420px;
-    display: block;
-    cursor: crosshair;
-  }
-
-  .canvas-hint-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 11.5px;
-    color: var(--text-muted);
-    padding-top: 4px;
-  }
-
   /* ── File Preview Row ── */
   .file-preview {
     display: none;
@@ -631,7 +534,6 @@ def home():
     .nav-btn span { font-size: 12px; }
     .card-footer { flex-direction: column; }
     .status-bar { width: 100%; }
-    .canvas-toolbar { flex-direction: column; align-items: flex-start; }
   }
 </style>
 </head>
@@ -743,43 +645,6 @@ def home():
         </button>
       </div>
 
-      <!-- Interactive Canvas Editor for Watermark Remover -->
-      <div class="canvas-editor-container" id="canvasEditor">
-        <div class="canvas-toolbar">
-          <div class="tool-btn-group">
-            <button type="button" class="tool-btn active" id="btnToolBrush" onclick="setEditorTool('brush')">
-              <i class="fa-solid fa-paintbrush"></i> Brush
-            </button>
-            <button type="button" class="tool-btn" id="btnToolBox" onclick="setEditorTool('box')">
-              <i class="fa-regular fa-square"></i> Box Select
-            </button>
-            <button type="button" class="tool-btn" id="btnToolAuto" onclick="setEditorTool('auto')">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Detect
-            </button>
-            <button type="button" class="tool-btn" onclick="clearCanvasMask()">
-              <i class="fa-solid fa-rotate-left"></i> Reset
-            </button>
-          </div>
-
-          <div class="brush-slider-group" id="brushSliderGroup">
-            <span>Size:</span>
-            <input type="range" id="brushSize" min="6" max="60" value="22" oninput="updateBrushSize(this.value)">
-            <span id="brushSizeVal">22px</span>
-          </div>
-        </div>
-
-        <div class="canvas-stage">
-          <canvas id="mainCanvas"></canvas>
-          <!-- Offscreen mask canvas -->
-          <canvas id="maskCanvas" style="display: none;"></canvas>
-        </div>
-
-        <div class="canvas-hint-bar">
-          <span id="canvasHintText"><i class="fa-solid fa-circle-info"></i> Brush or box over the watermark to erase. Unselected areas remain 100% untouched.</span>
-          <span id="maskPixelCount" style="color: #4ade80;">Ready</span>
-        </div>
-      </div>
-
       <!-- PDF Specific Watermark Input -->
       <div class="pdf-controls" id="pdfWatermarkControls">
         <div style="font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px;">
@@ -817,19 +682,6 @@ def home():
   let activeMainFeature = 'conversion';
   let activeConversionTool = 'pdf-to-docx';
   let selectedFiles = [];
-
-  // Canvas Editor State
-  let editorTool = 'brush'; // 'brush' or 'box'
-  let brushRadius = 22;
-  let isDrawing = false;
-  let boxStartX = 0, boxStartY = 0;
-  let loadedImage = null;
-  let hasUserMask = false;
-
-  const mainCanvas = document.getElementById('mainCanvas');
-  const maskCanvas = document.getElementById('maskCanvas');
-  const mainCtx = mainCanvas.getContext('2d');
-  const maskCtx = maskCanvas.getContext('2d');
 
   const conversionTools = {
     'pdf-to-docx': {
@@ -887,19 +739,16 @@ def home():
     const viewTitle = document.getElementById('viewTitle');
     const viewDesc = document.getElementById('viewDesc');
     const dropzoneHint = document.getElementById('dropzoneHint');
-    const canvasEditor = document.getElementById('canvasEditor');
     const pdfControls = document.getElementById('pdfWatermarkControls');
 
     clearFile();
 
     if (feature === 'conversion') {
       subTabs.style.display = 'grid';
-      canvasEditor.style.display = 'none';
       pdfControls.style.display = 'none';
       setConversionSubTool(activeConversionTool);
     } else if (feature === 'enhancer') {
       subTabs.style.display = 'none';
-      canvasEditor.style.display = 'none';
       pdfControls.style.display = 'none';
       viewTitle.textContent = 'Image Enhancer';
       viewDesc.textContent = 'Improve clarity, sharpness, and color contrast of your photos.';
@@ -909,7 +758,6 @@ def home():
       document.getElementById('btnText').textContent = 'Enhance Image';
     } else if (feature === 'remover') {
       subTabs.style.display = 'none';
-      canvasEditor.style.display = 'none';
       pdfControls.style.display = 'none';
       viewTitle.textContent = 'Background Remover';
       viewDesc.textContent = 'Isolate foreground subjects and export transparent PNGs automatically.';
@@ -919,8 +767,9 @@ def home():
       document.getElementById('btnText').textContent = 'Remove Background';
     } else if (feature === 'watermark') {
       subTabs.style.display = 'none';
+      pdfControls.style.display = 'none';
       viewTitle.textContent = 'Watermark Remover';
-      viewDesc.textContent = 'Erase stamps, logos, and watermark text from photos with interactive brush, or purge watermark layers from PDFs.';
+      viewDesc.textContent = 'Automatically detect and erase watermark text, logos, and stamps from photos or PDFs.';
       fileInput.accept = '.png,.jpg,.jpeg,.webp,.pdf';
       fileInput.multiple = false;
       dropzoneHint.textContent = '.png, .jpg, .webp, or .pdf files — up to 50 MB';
@@ -1003,194 +852,21 @@ def home():
     document.getElementById('dropzoneHint').textContent = 'Click or drop to choose a different file';
     document.getElementById('dropzoneIcon').innerHTML = '<i class="fa-solid fa-circle-check" style="color: #4ade80;"></i>';
 
-    const canvasEditor = document.getElementById('canvasEditor');
     const pdfControls = document.getElementById('pdfWatermarkControls');
-
-    if (activeMainFeature === 'watermark') {
-      if (ext === 'pdf') {
-        canvasEditor.style.display = 'none';
-        pdfControls.style.display = 'block';
-      } else {
-        // Image loaded into interactive canvas
-        pdfControls.style.display = 'none';
-        setupInteractiveCanvas(first);
-      }
+    if (activeMainFeature === 'watermark' && ext === 'pdf') {
+      pdfControls.style.display = 'block';
     } else {
-      canvasEditor.style.display = 'none';
       pdfControls.style.display = 'none';
     }
 
     hideStatus();
   }
 
-  // Setup interactive image canvas for watermark brushing
-  function setupInteractiveCanvas(file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = new Image();
-      img.onload = function() {
-        loadedImage = img;
-        mainCanvas.width = img.width;
-        mainCanvas.height = img.height;
-        maskCanvas.width = img.width;
-        maskCanvas.height = img.height;
-
-        // Render image onto mainCanvas
-        redrawMainCanvas();
-        clearCanvasMask();
-
-        document.getElementById('canvasEditor').style.display = 'flex';
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function redrawMainCanvas() {
-    if (!loadedImage) return;
-    mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-    mainCtx.drawImage(loadedImage, 0, 0);
-
-    // Overlay mask with emerald green semi-transparency
-    mainCtx.save();
-    mainCtx.drawImage(maskCanvas, 0, 0);
-    mainCtx.restore();
-  }
-
-  function clearCanvasMask() {
-    maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
-    hasUserMask = false;
-    const pixelCount = document.getElementById('maskPixelCount');
-    if (editorTool === 'auto') {
-      if (pixelCount) pixelCount.textContent = 'Auto-Detect active';
-    } else {
-      if (pixelCount) pixelCount.textContent = 'Ready (Brush over watermark)';
-    }
-    redrawMainCanvas();
-  }
-
-  function setEditorTool(tool) {
-    editorTool = tool;
-    const btnBrush = document.getElementById('btnToolBrush');
-    const btnBox = document.getElementById('btnToolBox');
-    const btnAuto = document.getElementById('btnToolAuto');
-    const slider = document.getElementById('brushSliderGroup');
-    const hint = document.getElementById('canvasHintText');
-    const pixelCount = document.getElementById('maskPixelCount');
-
-    if (btnBrush) btnBrush.classList.toggle('active', tool === 'brush');
-    if (btnBox) btnBox.classList.toggle('active', tool === 'box');
-    if (btnAuto) btnAuto.classList.toggle('active', tool === 'auto');
-
-    if (tool === 'auto') {
-      if (slider) slider.style.display = 'none';
-      clearCanvasMask();
-      if (hint) hint.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> <strong>Smart Auto-Detect:</strong> automatically detects text & logo stamps and cleans them with zero landscape distortion.';
-      if (pixelCount) pixelCount.textContent = 'Auto-Detect active';
-    } else if (tool === 'brush') {
-      if (slider) slider.style.display = 'flex';
-      if (hint) hint.innerHTML = '<i class="fa-solid fa-paintbrush"></i> <strong>Brush:</strong> paint over watermark. Only brushed pixels are infilled; untouched areas remain 100% pixel-perfect.';
-      if (pixelCount && !hasUserMask) pixelCount.textContent = 'Ready (Brush over watermark)';
-    } else if (tool === 'box') {
-      if (slider) slider.style.display = 'none';
-      if (hint) hint.innerHTML = '<i class="fa-regular fa-square"></i> <strong>Box Select:</strong> drag a rectangle around watermark stamps to remove them cleanly.';
-      if (pixelCount && !hasUserMask) pixelCount.textContent = 'Ready (Drag rectangle)';
-    }
-  }
-
-  function updateBrushSize(val) {
-    brushRadius = parseInt(val, 10);
-    document.getElementById('brushSizeVal').textContent = val + 'px';
-  }
-
-  // Canvas Mouse Coordinates relative to actual canvas resolution
-  function getCanvasCoords(e) {
-    const rect = mainCanvas.getBoundingClientRect();
-    const scaleX = mainCanvas.width / rect.width;
-    const scaleY = mainCanvas.height / rect.height;
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
-    };
-  }
-
-  mainCanvas.addEventListener('mousedown', e => {
-    isDrawing = true;
-    const pt = getCanvasCoords(e);
-    if (editorTool === 'brush') {
-      paintStroke(pt.x, pt.y);
-    } else {
-      boxStartX = pt.x;
-      boxStartY = pt.y;
-    }
-  });
-
-  window.addEventListener('mouseup', e => {
-    if (!isDrawing) return;
-    isDrawing = false;
-    if (editorTool === 'box') {
-      const pt = getCanvasCoords(e);
-      const bx = Math.min(boxStartX, pt.x);
-      const by = Math.min(boxStartY, pt.y);
-      const bw = Math.abs(pt.x - boxStartX);
-      const bh = Math.abs(pt.y - boxStartY);
-      if (bw > 4 && bh > 4) {
-        // Draw box on mask
-        maskCtx.fillStyle = 'rgba(34, 197, 94, 0.45)';
-        maskCtx.fillRect(bx, by, bw, bh);
-        maskCtx.strokeStyle = '#22c55e';
-        maskCtx.lineWidth = 2;
-        maskCtx.strokeRect(bx, by, bw, bh);
-        hasUserMask = true;
-        document.getElementById('maskPixelCount').textContent = 'Area selected';
-        redrawMainCanvas();
-      }
-    }
-  });
-
-  mainCanvas.addEventListener('mousemove', e => {
-    if (!isDrawing) return;
-    const pt = getCanvasCoords(e);
-    if (editorTool === 'brush') {
-      paintStroke(pt.x, pt.y);
-    } else {
-      // Live box preview
-      redrawMainCanvas();
-      mainCtx.save();
-      mainCtx.fillStyle = 'rgba(34, 197, 94, 0.3)';
-      mainCtx.strokeStyle = '#22c55e';
-      mainCtx.lineWidth = 2;
-      const bx = Math.min(boxStartX, pt.x);
-      const by = Math.min(boxStartY, pt.y);
-      const bw = Math.abs(pt.x - boxStartX);
-      const bh = Math.abs(pt.y - boxStartY);
-      mainCtx.fillRect(bx, by, bw, bh);
-      mainCtx.strokeRect(bx, by, bw, bh);
-      mainCtx.restore();
-    }
-  });
-
-  function paintStroke(x, y) {
-    maskCtx.save();
-    maskCtx.fillStyle = 'rgba(34, 197, 94, 0.45)';
-    maskCtx.beginPath();
-    maskCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
-    maskCtx.fill();
-    maskCtx.restore();
-
-    hasUserMask = true;
-    document.getElementById('maskPixelCount').textContent = 'Watermark brushed';
-    redrawMainCanvas();
-  }
-
   function clearFile() {
     selectedFiles = [];
     fileInput.value = '';
-    loadedImage = null;
-    hasUserMask = false;
     
     document.getElementById('filePreview').style.display = 'none';
-    document.getElementById('canvasEditor').style.display = 'none';
     document.getElementById('pdfWatermarkControls').style.display = 'none';
 
     const actionBtn = document.getElementById('actionBtn');
@@ -1282,34 +958,8 @@ def home():
           form.append('custom_text', customTxt.trim());
         }
       } else {
-        // Image watermark: check if user brushed a mask on canvas
-        if (editorTool !== 'auto' && hasUserMask) {
-          showStatus('info', 'Erasing selected watermark with pixel-level precision...');
-          // Export pure black and white mask from maskCanvas
-          const exportCanvas = document.createElement('canvas');
-          exportCanvas.width = maskCanvas.width;
-          exportCanvas.height = maskCanvas.height;
-          const expCtx = exportCanvas.getContext('2d');
-          expCtx.fillStyle = '#000000';
-          expCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-
-          // Get image data from maskCanvas: any non-transparent pixel becomes pure white (#ffffff)
-          const maskImgData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
-          const outImgData = expCtx.getImageData(0, 0, exportCanvas.width, exportCanvas.height);
-          for (let i = 0; i < maskImgData.data.length; i += 4) {
-            if (maskImgData.data[i + 3] > 10) { // Has opacity
-              outImgData.data[i] = 255;
-              outImgData.data[i + 1] = 255;
-              outImgData.data[i + 2] = 255;
-              outImgData.data[i + 3] = 255;
-            }
-          }
-          expCtx.putImageData(outImgData, 0, 0);
-          form.append('mask_data', exportCanvas.toDataURL('image/png'));
-        } else {
-          showStatus('info', 'Auto-detecting and removing watermark stamps...');
-          form.append('preset', 'auto');
-        }
+        form.append('preset', 'auto');
+        showStatus('info', 'Automatically detecting and removing watermarks...');
       }
     }
 
