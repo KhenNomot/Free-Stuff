@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreeShits — Free File & Image Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- Header Navigation -->
+<header>
+  <div class="nav-container">
+    <a href="/" class="brand">
+      <div class="brand-badge">
+        <i class="fa-solid fa-layer-group"></i>
+      </div>
+      <span class="brand-name">FreeShits</span>
+    </a>
+
+    <!-- Top Navigation Features -->
+    <ul class="nav-menu">
+      <li>
+        <button class="nav-btn active" id="nav-conversion" onclick="switchMainFeature('conversion')">
+          <i class="fa-solid fa-arrows-split-up-and-left"></i>
+          <span>File Conversion</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-btn" id="nav-enhancer" onclick="switchMainFeature('enhancer')">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>Image Enhancer</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-btn" id="nav-remover" onclick="switchMainFeature('remover')">
+          <i class="fa-solid fa-scissors"></i>
+          <span>Background Remover</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-btn" id="nav-watermark" onclick="switchMainFeature('watermark')">
+          <i class="fa-solid fa-eraser"></i>
+          <span>Watermark Remover</span>
+        </button>
+      </li>
+    </ul>
+
+    <div class="nav-right"></div>
+  </div>
+</header>
+
+<!-- Main Workspace -->
+<main>
+  <!-- Section Title -->
+  <div class="section-header">
+    <h1 id="viewTitle">File Conversion</h1>
+    <p id="viewDesc">Convert PDF, Word documents, and images with layout preservation.</p>
+  </div>
+
+  <!-- Sub-Tabs for File Conversion -->
+  <div class="sub-tabs" id="conversionSubTabs">
+    <button class="sub-tab-btn active" id="tab-pdf-to-docx" onclick="setConversionSubTool('pdf-to-docx')">
+      <i class="fa-regular fa-file-pdf"></i>
+      <span>PDF to Word</span>
+    </button>
+    <button class="sub-tab-btn" id="tab-docx-to-pdf" onclick="setConversionSubTool('docx-to-pdf')">
+      <i class="fa-regular fa-file-word"></i>
+      <span>Word to PDF</span>
+    </button>
+    <button class="sub-tab-btn" id="tab-images-to-pdf" onclick="setConversionSubTool('images-to-pdf')">
+      <i class="fa-regular fa-images"></i>
+      <span>Images to PDF</span>
+    </button>
+    <button class="sub-tab-btn" id="tab-pdf-to-images" onclick="setConversionSubTool('pdf-to-images')">
+      <i class="fa-solid fa-images"></i>
+      <span>PDF to Images</span>
+    </button>
+  </div>
+
+  <!-- Processing Card -->
+  <div class="tool-card">
+    <div class="card-body">
+      <!-- Bulletproof Dropzone with z-indexed file input -->
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput">
+        <div class="dropzone-content">
+          <div class="dropzone-icon" id="dropzoneIcon">
+            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+          </div>
+          <div>
+            <div class="dropzone-title" id="dropzoneTitle">Drag &amp; drop file here, or click to browse</div>
+            <div class="dropzone-hint" id="dropzoneHint">.pdf files only — up to 50 MB</div>
+          </div>
+          <div class="btn-browse-pill">
+            <i class="fa-solid fa-folder-open"></i> Choose File
+          </div>
+        </div>
+      </div>
+
+      <!-- File Preview Row -->
+      <div class="file-preview" id="filePreview">
+        <div class="file-preview-info">
+          <div class="file-preview-icon">
+            <i class="fa-regular fa-file" id="fileTypeIcon"></i>
+          </div>
+          <div>
+            <div class="file-name" id="fileName">document.pdf</div>
+            <div class="file-meta" id="fileMeta">0 KB</div>
+          </div>
+        </div>
+        <button class="btn-remove" onclick="clearFile()" title="Remove file">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- PDF Specific Watermark Input -->
+      <div class="pdf-controls" id="pdfWatermarkControls">
+        <div style="font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px;">
+          <i class="fa-solid fa-file-pdf"></i> Watermark Text to Purge across PDF Pages:
+        </div>
+        <input type="text" id="pdfCustomText" placeholder="e.g. CONFIDENTIAL, DRAFT, CamScanner (leave blank to purge all standard stamps)" class="custom-text-input">
+      </div>
+
+      <!-- Image Comparison Container (For Enhancer, Background Remover, Watermark Remover) -->
+      <div class="comparison-container" id="comparisonContainer">
+        <div class="comparison-header">
+          <div class="comparison-tabs">
+            <button type="button" class="comp-tab-btn active" id="tabSlider" onclick="setComparisonMode('slider')">
+              <i class="fa-solid fa-arrows-left-right"></i>
+              <span>Split Slider</span>
+            </button>
+            <button type="button" class="comp-tab-btn" id="tabSideBySide" onclick="setComparisonMode('side')">
+              <i class="fa-solid fa-table-columns"></i>
+              <span>Side-by-Side</span>
+            </button>
+          </div>
+          <div class="comparison-actions">
+            <button type="button" class="btn-download-comp" onclick="downloadComparisonResult()">
+              <i class="fa-solid fa-download"></i>
+              <span id="compDownloadBtnText">Download</span>
+            </button>
+            <button type="button" class="btn-reset-comp" onclick="clearComparison()">
+              <i class="fa-solid fa-arrow-rotate-left"></i>
+              <span>New</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. Interactive Split Slider View -->
+        <div class="slider-stage-wrapper checkerboard-bg" id="sliderStageWrapper">
+          <div class="slider-stage" id="sliderStage">
+            <!-- After (Processed) Base Image -->
+            <img id="compImgAfter" class="comp-img after-img" alt="Processed Output">
+            <!-- Before (Original) Clipped Overlay -->
+            <img id="compImgBefore" class="comp-img before-img-overlay" alt="Original Image">
+            <!-- Draggable Divider Line & Handle -->
+            <div class="slider-divider" id="sliderDivider">
+              <div class="slider-handle">
+                <i class="fa-solid fa-arrows-left-right"></i>
+              </div>
+            </div>
+            <!-- Badges -->
+            <span class="comp-badge badge-before">Original</span>
+            <span class="comp-badge badge-after">Processed</span>
+          </div>
+        </div>
+
+        <!-- 2. Side-by-Side View -->
+        <div class="side-stage" id="sideStage">
+          <div class="side-col">
+            <div class="side-label">
+              <span><i class="fa-solid fa-image"></i> Original Image</span>
+              <span id="sideBeforeMeta" style="font-size: 11px; opacity: 0.7;"></span>
+            </div>
+            <div class="side-img-box">
+              <img id="sideImgBefore" class="side-img" alt="Original Image">
+            </div>
+          </div>
+          <div class="side-col">
+            <div class="side-label">
+              <span><i class="fa-solid fa-wand-magic-sparkles"></i> Processed Output</span>
+              <span id="sideAfterMeta" style="font-size: 11px; color: #4ade80;"></span>
+            </div>
+            <div class="side-img-box checkerboard-bg">
+              <img id="sideImgAfter" class="side-img" alt="Processed Output">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action & Status Footer -->
+    <div class="card-footer">
+      <button class="btn-action" id="actionBtn" onclick="executeCurrentAction()" disabled>
+        <i class="fa-solid fa-play" id="btnIcon"></i>
+        <span id="btnText">Convert File</span>
+      </button>
+      <div class="status-bar" id="statusBar">
+        <i id="statusIcon" class="fa-solid fa-circle-notch fa-spin"></i>
+        <span id="statusMessage">Processing...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zero Retention Banner -->
+  <div class="privacy-footer">
+    <i class="fa-solid fa-shield-halved"></i>
+    <span>Stateless &amp; Private: Files are processed in memory and purged immediately after download.</span>
+  </div>
+</main>
+
+<footer>
+  FreeShits &bull; Free File Conversion &amp; Image Processing
+</footer>
+
+<script src="/static/js/comparison.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
