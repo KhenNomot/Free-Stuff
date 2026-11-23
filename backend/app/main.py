@@ -437,6 +437,274 @@ def home():
     border-color: rgba(255,255,255,0.4);
   }
 
+  /* ── Image Comparison Component ── */
+  .comparison-container {
+    display: none;
+    margin-top: 18px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    flex-direction: column;
+    gap: 14px;
+    animation: fadeIn 200ms ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .comparison-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .comparison-tabs {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 3px;
+    border-radius: var(--radius);
+    gap: 2px;
+  }
+
+  .comp-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .comp-tab-btn:hover {
+    color: var(--text);
+  }
+
+  .comp-tab-btn.active {
+    color: var(--text);
+    background: var(--surface-2);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+
+  .comparison-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-download-comp {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #ffffff;
+    color: #000000;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .btn-download-comp:hover {
+    background: #e2e8f0;
+  }
+
+  .btn-reset-comp {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .btn-reset-comp:hover {
+    color: var(--text);
+    border-color: var(--border-2);
+    background: var(--accent-dim);
+  }
+
+  /* Split Slider Stage */
+  .slider-stage-wrapper {
+    position: relative;
+    width: 100%;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    touch-action: none;
+  }
+
+  .checkerboard-bg {
+    background-color: #0c0c0c;
+    background-image: 
+      linear-gradient(45deg, #161616 25%, transparent 25%),
+      linear-gradient(-45deg, #161616 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #161616 75%),
+      linear-gradient(-45deg, transparent 75%, #161616 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  }
+
+  .slider-stage {
+    position: relative;
+    width: 100%;
+    max-height: 480px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: ew-resize;
+    overflow: hidden;
+  }
+
+  .comp-img {
+    max-width: 100%;
+    max-height: 480px;
+    display: block;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  .before-img-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+    -webkit-clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+  }
+
+  .slider-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: #ffffff;
+    box-shadow: 0 0 12px rgba(0,0,0,0.9);
+    pointer-events: none;
+  }
+
+  .slider-handle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #000000;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  }
+
+  .comp-badge {
+    position: absolute;
+    top: 10px;
+    padding: 4px 9px;
+    border-radius: 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .badge-before {
+    left: 10px;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #f3f4f6;
+  }
+
+  .badge-after {
+    right: 10px;
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    color: #4ade80;
+  }
+
+  /* Side by Side View */
+  .side-stage {
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .side-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .side-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .side-img-box {
+    width: 100%;
+    max-height: 360px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000000;
+    padding: 6px;
+  }
+
+  .side-img {
+    max-width: 100%;
+    max-height: 340px;
+    object-fit: contain;
+    display: block;
+  }
+
+  @media (max-width: 600px) {
+    .side-stage { grid-template-columns: 1fr; }
+    .comparison-header { flex-direction: column; align-items: stretch; }
+    .comparison-tabs, .comparison-actions { width: 100%; justify-content: center; }
+  }
+
   /* ── Card Footer & Actions ── */
   .card-footer {
     padding: 16px 28px;
@@ -652,6 +920,73 @@ def home():
         </div>
         <input type="text" id="pdfCustomText" placeholder="e.g. CONFIDENTIAL, DRAFT, CamScanner (leave blank to purge all standard stamps)" class="custom-text-input">
       </div>
+
+      <!-- Image Comparison Container (For Enhancer, Background Remover, Watermark Remover) -->
+      <div class="comparison-container" id="comparisonContainer">
+        <div class="comparison-header">
+          <div class="comparison-tabs">
+            <button type="button" class="comp-tab-btn active" id="tabSlider" onclick="setComparisonMode('slider')">
+              <i class="fa-solid fa-arrows-left-right"></i>
+              <span>Split Slider</span>
+            </button>
+            <button type="button" class="comp-tab-btn" id="tabSideBySide" onclick="setComparisonMode('side')">
+              <i class="fa-solid fa-table-columns"></i>
+              <span>Side-by-Side</span>
+            </button>
+          </div>
+          <div class="comparison-actions">
+            <button type="button" class="btn-download-comp" onclick="downloadComparisonResult()">
+              <i class="fa-solid fa-download"></i>
+              <span id="compDownloadBtnText">Download</span>
+            </button>
+            <button type="button" class="btn-reset-comp" onclick="clearComparison()">
+              <i class="fa-solid fa-arrow-rotate-left"></i>
+              <span>New</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. Interactive Split Slider View -->
+        <div class="slider-stage-wrapper checkerboard-bg" id="sliderStageWrapper">
+          <div class="slider-stage" id="sliderStage">
+            <!-- After (Processed) Base Image -->
+            <img id="compImgAfter" class="comp-img after-img" alt="Processed Output">
+            <!-- Before (Original) Clipped Overlay -->
+            <img id="compImgBefore" class="comp-img before-img-overlay" alt="Original Image">
+            <!-- Draggable Divider Line & Handle -->
+            <div class="slider-divider" id="sliderDivider">
+              <div class="slider-handle">
+                <i class="fa-solid fa-arrows-left-right"></i>
+              </div>
+            </div>
+            <!-- Badges -->
+            <span class="comp-badge badge-before">Original</span>
+            <span class="comp-badge badge-after">Processed</span>
+          </div>
+        </div>
+
+        <!-- 2. Side-by-Side View -->
+        <div class="side-stage" id="sideStage">
+          <div class="side-col">
+            <div class="side-label">
+              <span><i class="fa-solid fa-image"></i> Original Image</span>
+              <span id="sideBeforeMeta" style="font-size: 11px; opacity: 0.7;"></span>
+            </div>
+            <div class="side-img-box">
+              <img id="sideImgBefore" class="side-img" alt="Original Image">
+            </div>
+          </div>
+          <div class="side-col">
+            <div class="side-label">
+              <span><i class="fa-solid fa-wand-magic-sparkles"></i> Processed Output</span>
+              <span id="sideAfterMeta" style="font-size: 11px; color: #4ade80;"></span>
+            </div>
+            <div class="side-img-box checkerboard-bg">
+              <img id="sideImgAfter" class="side-img" alt="Processed Output">
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Action & Status Footer -->
@@ -682,6 +1017,11 @@ def home():
   let activeMainFeature = 'conversion';
   let activeConversionTool = 'pdf-to-docx';
   let selectedFiles = [];
+  let originalImageObjectUrl = null;
+  let processedImageObjectUrl = null;
+  let currentResultBlob = null;
+  let currentResultFileName = '';
+  let isSliding = false;
 
   const conversionTools = {
     'pdf-to-docx': {
@@ -821,6 +1161,8 @@ def home():
     selectedFiles = Array.from(files);
     if (!selectedFiles.length) return;
 
+    clearComparison();
+
     const preview = document.getElementById('filePreview');
     const fname = document.getElementById('fileName');
     const fmeta = document.getElementById('fileMeta');
@@ -828,6 +1170,13 @@ def home():
     const actionBtn = document.getElementById('actionBtn');
     const first = selectedFiles[0];
     const ext = first.name.split('.').pop().toLowerCase();
+
+    if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+      if (originalImageObjectUrl) {
+        URL.revokeObjectURL(originalImageObjectUrl);
+      }
+      originalImageObjectUrl = URL.createObjectURL(first);
+    }
 
     fname.textContent = first.name;
     fmeta.textContent = formatBytes(first.size);
@@ -866,6 +1215,12 @@ def home():
     selectedFiles = [];
     fileInput.value = '';
     
+    if (originalImageObjectUrl) {
+      URL.revokeObjectURL(originalImageObjectUrl);
+      originalImageObjectUrl = null;
+    }
+    clearComparison();
+
     document.getElementById('filePreview').style.display = 'none';
     document.getElementById('pdfWatermarkControls').style.display = 'none';
 
@@ -978,10 +1333,6 @@ def home():
       }
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-
       let outName = fallbackOutName;
       const disposition = res.headers.get('Content-Disposition');
       if (disposition) {
@@ -989,13 +1340,15 @@ def home():
         if (m && m[1]) outName = m[1].replace(/['"]/g, '');
       }
 
-      a.download = outName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const isImageTool = ['enhancer', 'remover', 'watermark'].includes(activeMainFeature);
+      const isImageFile = selectedFiles[0] && ['.png', '.jpg', '.jpeg', '.webp'].some(ext => selectedFiles[0].name.toLowerCase().endsWith(ext));
 
-      showStatus('success', `Completed: ${outName}`);
+      if (isImageTool && isImageFile && originalImageObjectUrl) {
+        showImageComparison(originalImageObjectUrl, blob, outName, selectedFiles[0]);
+      } else {
+        triggerDirectDownload(blob, outName);
+        showStatus('success', `Completed: ${outName}`);
+      }
     } catch (err) {
       showStatus('error', err.message);
     } finally {
@@ -1003,6 +1356,157 @@ def home():
       btnIcon.className = 'fa-solid fa-play';
       btnText.textContent = originalText;
     }
+  }
+
+  // Comparison Helpers
+  function triggerDirectDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function downloadComparisonResult() {
+    if (!currentResultBlob || !currentResultFileName) return;
+    triggerDirectDownload(currentResultBlob, currentResultFileName);
+  }
+
+  function showImageComparison(beforeUrl, resultBlob, outName, originalFile) {
+    currentResultBlob = resultBlob;
+    currentResultFileName = outName;
+
+    if (processedImageObjectUrl) {
+      URL.revokeObjectURL(processedImageObjectUrl);
+    }
+    processedImageObjectUrl = URL.createObjectURL(resultBlob);
+
+    // Update Slider Images
+    const compImgAfter = document.getElementById('compImgAfter');
+    const compImgBefore = document.getElementById('compImgBefore');
+    compImgAfter.src = processedImageObjectUrl;
+    compImgBefore.src = beforeUrl;
+
+    // Update Side-by-Side Images
+    const sideImgBefore = document.getElementById('sideImgBefore');
+    const sideImgAfter = document.getElementById('sideImgAfter');
+    sideImgBefore.src = beforeUrl;
+    sideImgAfter.src = processedImageObjectUrl;
+
+    // Metadata labels
+    document.getElementById('sideBeforeMeta').textContent = `${formatBytes(originalFile.size)}`;
+    document.getElementById('sideAfterMeta').textContent = `${formatBytes(resultBlob.size)}`;
+    document.getElementById('compDownloadBtnText').textContent = `Download (${formatBytes(resultBlob.size)})`;
+
+    // Reset slider to 50%
+    updateSliderPosition(50);
+
+    // Show comparison container and ensure default slider mode
+    const compContainer = document.getElementById('comparisonContainer');
+    compContainer.style.display = 'flex';
+    setComparisonMode('slider');
+
+    // Smooth scroll down to comparison
+    compContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Download file automatically & notify
+    triggerDirectDownload(resultBlob, outName);
+    showStatus('success', `Completed: ${outName}`);
+  }
+
+  function updateSliderPosition(pct) {
+    pct = Math.max(0, Math.min(100, pct));
+    const sliderDivider = document.getElementById('sliderDivider');
+    const compImgBefore = document.getElementById('compImgBefore');
+
+    if (sliderDivider) {
+      sliderDivider.style.left = `${pct}%`;
+    }
+    if (compImgBefore) {
+      compImgBefore.style.clipPath = `polygon(0 0, ${pct}% 0, ${pct}% 100%, 0 100%)`;
+      compImgBefore.style.webkitClipPath = `polygon(0 0, ${pct}% 0, ${pct}% 100%, 0 100%)`;
+    }
+  }
+
+  function handleSliderMove(e) {
+    if (!isSliding) return;
+    const stage = document.getElementById('sliderStage');
+    if (!stage) return;
+    const rect = stage.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const offsetX = clientX - rect.left;
+    const pct = (offsetX / rect.width) * 100;
+    updateSliderPosition(pct);
+  }
+
+  function setComparisonMode(mode) {
+    const tabSlider = document.getElementById('tabSlider');
+    const tabSide = document.getElementById('tabSideBySide');
+    const sliderStage = document.getElementById('sliderStageWrapper');
+    const sideStage = document.getElementById('sideStage');
+
+    if (mode === 'slider') {
+      tabSlider.classList.add('active');
+      tabSide.classList.remove('active');
+      sliderStage.style.display = 'flex';
+      sideStage.style.display = 'none';
+    } else {
+      tabSlider.classList.remove('active');
+      tabSide.classList.add('active');
+      sliderStage.style.display = 'none';
+      sideStage.style.display = 'grid';
+    }
+  }
+
+  function clearComparison() {
+    const compContainer = document.getElementById('comparisonContainer');
+    if (compContainer) compContainer.style.display = 'none';
+
+    if (processedImageObjectUrl) {
+      URL.revokeObjectURL(processedImageObjectUrl);
+      processedImageObjectUrl = null;
+    }
+    currentResultBlob = null;
+    currentResultFileName = '';
+
+    const compImgAfter = document.getElementById('compImgAfter');
+    const compImgBefore = document.getElementById('compImgBefore');
+    const sideImgBefore = document.getElementById('sideImgBefore');
+    const sideImgAfter = document.getElementById('sideImgAfter');
+
+    if (compImgAfter) compImgAfter.src = '';
+    if (compImgBefore) compImgBefore.src = '';
+    if (sideImgBefore) sideImgBefore.src = '';
+    if (sideImgAfter) sideImgAfter.src = '';
+  }
+
+  // Drag listeners for slider
+  const stageEl = document.getElementById('sliderStage');
+  if (stageEl) {
+    stageEl.addEventListener('mousedown', e => {
+      isSliding = true;
+      handleSliderMove(e);
+    });
+    window.addEventListener('mousemove', e => {
+      if (isSliding) handleSliderMove(e);
+    });
+    window.addEventListener('mouseup', () => {
+      isSliding = false;
+    });
+
+    stageEl.addEventListener('touchstart', e => {
+      isSliding = true;
+      handleSliderMove(e);
+    }, { passive: true });
+    window.addEventListener('touchmove', e => {
+      if (isSliding) handleSliderMove(e);
+    }, { passive: true });
+    window.addEventListener('touchend', () => {
+      isSliding = false;
+    });
   }
 
   // Initialize
