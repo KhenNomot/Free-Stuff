@@ -94,9 +94,9 @@ def home():
     max-width: 1120px;
     margin: 0 auto;
     padding: 0 24px;
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
   }
 
   .brand {
@@ -172,29 +172,7 @@ def home():
 
   .nav-right {
     display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .btn-docs {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 6px 12px;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all var(--transition);
-  }
-
-  .btn-docs:hover {
-    color: var(--text);
-    border-color: var(--border-2);
-    background: var(--accent-dim);
+    justify-content: flex-end;
   }
 
   /* ── Main Layout ── */
@@ -697,12 +675,7 @@ def home():
       </li>
     </ul>
 
-    <div class="nav-right">
-      <a href="/docs" target="_blank" class="btn-docs">
-        <i class="fa-solid fa-code"></i>
-        <span>API Docs</span>
-      </a>
-    </div>
+    <div class="nav-right"></div>
   </div>
 </header>
 
